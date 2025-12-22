@@ -22,15 +22,26 @@ PERSONA_FILE = os.getenv("PERSONA_FILE")
 AI_MODEL = os.getenv("AI_MODEL")
 
 # Basic validation
-if not all([DISCORD_TOKEN, GEMINI_API_KEY, STORE_ID, TARGET_CHANNEL_ID_STR]):
-    print("❌ Error: Missing environment variables. Please check .env")
-    exit(1)
+def validate_config():
+    if not all([DISCORD_TOKEN, GEMINI_API_KEY, STORE_ID, TARGET_CHANNEL_ID_STR]):
+        return False
+    return True
+
+if __name__ == "__main__":
+    if not validate_config():
+        print("❌ Error: Missing environment variables. Please check .env")
+        exit(1)
 
 try:
-    TARGET_CHANNEL_ID = int(TARGET_CHANNEL_ID_STR)
+    if TARGET_CHANNEL_ID_STR:
+        TARGET_CHANNEL_ID = int(TARGET_CHANNEL_ID_STR)
+    else:
+        TARGET_CHANNEL_ID = 0
 except ValueError:
-    print("❌ Error: TARGET_CHANNEL_ID must be an integer.")
-    exit(1)
+    if __name__ == "__main__":
+        print("❌ Error: TARGET_CHANNEL_ID must be an integer.")
+        exit(1)
+    TARGET_CHANNEL_ID = 0
 
 import pathlib
 
@@ -134,8 +145,69 @@ def save_ledger_files(response_text):
         print(f"❌ Error saving ledgers: {e}")
     return count
 
-# Initialize System Instruction
-FULL_SYSTEM_INSTRUCTION = load_full_context()
+# -------------------------------------------------------------
+# PARSING & FORMATTING UTILITIES 
+# -------------------------------------------------------------
+
+def render_table_as_ascii(match):
+    """Processes a DATA_TABLE block into a PrettyTable ASCII string."""
+    table_block = match.group(1)
+    try:
+        lines = [l.strip() for l in table_block.strip().split('\n') if l.strip()]
+        title = "Data Table"
+        headers = []
+        rows = []
+        
+        for line in lines:
+            if line.startswith("Title:"):
+                title = line.replace("Title:", "").strip()
+            elif "|" in line:
+                cols = [c.strip() for c in line.split('|')]
+                if not headers:
+                    headers = cols
+                else:
+                    rows.append(cols)
+        
+        if headers:
+            pt = PrettyTable()
+            pt.field_names = headers
+            pt.align = "l"
+            pt.border = True
+            
+            for row in rows:
+                if len(row) < len(headers):
+                    row.extend([""] * (len(headers) - len(row)))
+                pt.add_row(row[:len(headers)])
+            
+            return f"**{title}**\n```text\n{pt.get_string()}\n```"
+    except Exception as e:
+        print(f"⚠️ Failed to parse DATA_TABLE: {e}")
+        return match.group(0)
+    return match.group(0)
+
+def process_response_formatting(text):
+    """Handles all regex-based replacements and extractions (DATA_TABLE, MEMORY_UPDATE, VISUAL_PROMPT)."""
+    # 1. DATA_TABLE
+    data_table_pattern = r"```DATA_TABLE\n(.*?)```"
+    text = re.sub(data_table_pattern, render_table_as_ascii, text, flags=re.DOTALL).strip()
+    
+    # 2. MEMORY_UPDATE
+    memory_update_pattern = r"```MEMORY_UPDATE\n(.*?)```"
+    memory_match = re.search(memory_update_pattern, text, re.DOTALL)
+    facts = None
+    if memory_match:
+        facts = memory_match.group(1).strip()
+        text = re.sub(memory_update_pattern, "", text, flags=re.DOTALL).strip()
+        
+    # 3. VISUAL_PROMPT
+    visual_prompt_pattern = r"```VISUAL_PROMPT\n(.*?)```"
+    visual_match = re.search(visual_prompt_pattern, text, re.DOTALL)
+    visual_prompt = None
+    if visual_match:
+        visual_prompt = visual_match.group(1).strip()
+        text = re.sub(visual_prompt_pattern, "", text, flags=re.DOTALL).strip()
+
+    return text, facts, visual_prompt
 
 # 2. Safety Settings
 safety_settings = [
@@ -405,76 +477,15 @@ async def on_message(message):
                         res_text = response.text
                         
                         # -------------------------------------------------------------
-                        # DATA_TABLE Parsing & PrettyTable Integration
+                        # Response Processing (Refactored)
                         # -------------------------------------------------------------
-                        data_table_pattern = r"```DATA_TABLE\n(.*?)```"
-                        
-                        def render_table_as_ascii(match):
-                            table_block = match.group(1)
-                            try:
-                                lines = [l.strip() for l in table_block.strip().split('\n') if l.strip()]
-                                title = "Data Table"
-                                headers = []
-                                rows = []
-                                
-                                for line in lines:
-                                    if line.startswith("Title:"):
-                                        title = line.replace("Title:", "").strip()
-                                    elif "|" in line:
-                                        cols = [c.strip() for c in line.split('|')]
-                                        if not headers:
-                                            headers = cols
-                                        else:
-                                            rows.append(cols)
-                                
-                                if headers:
-                                    pt = PrettyTable()
-                                    pt.field_names = headers
-                                    pt.align = "l"
-                                    pt.border = True
-                                    
-                                    # Note: Horizontal wrapping for mobile if columns > 5
-                                    # ASCII tables don't naturally wrap, so we keep it standard 
-                                    # but acknowledge the constraint for readability.
-                                    for row in rows:
-                                        # Fill missing columns with empty string if row is too short
-                                        if len(row) < len(headers):
-                                            row.extend([""] * (len(headers) - len(row)))
-                                        pt.add_row(row[:len(headers)]) # Ensure row isn't too long
-                                    
-                                    return f"**{title}**\n```text\n{pt.get_string()}\n```"
-                            except Exception as e:
-                                print(f"⚠️ Failed to parse DATA_TABLE: {e}")
-                                return match.group(0) # Fallback to raw text
-                            return match.group(0)
+                        res_text, facts_to_remember, prompt_text = process_response_formatting(res_text)
 
-                        # Replace all DATA_TABLE blocks with ASCII versions
-                        res_text = re.sub(data_table_pattern, render_table_as_ascii, res_text, flags=re.DOTALL).strip()
-                        
-                        # -------------------------------------------------------------
-                        # MEMORY_UPDATE Parsing & Persistence logic
-                        # -------------------------------------------------------------
-                        memory_update_pattern = r"```MEMORY_UPDATE\n(.*?)```"
-                        memory_match = re.search(memory_update_pattern, res_text, re.DOTALL)
-                        
-                        if memory_match:
-                            facts_to_remember = memory_match.group(1).strip()
-                            # Clean it from the user-facing text
-                            res_text = re.sub(memory_update_pattern, "", res_text, flags=re.DOTALL).strip()
-                            # Run the background persistence update
-                            # Note: In a production bot, you might want to run this in a non-blocking task
+                        if facts_to_remember:
                             update_ledgers_logic(facts_to_remember)
 
-                        # -------------------------------------------------------------
-                        # VISUAL_PROMPT Parsing & Image Generation
-                        # -------------------------------------------------------------
-                        visual_prompt_pattern = r"```VISUAL_PROMPT\n(.*?)```"
-                        visual_match = re.search(visual_prompt_pattern, res_text, re.DOTALL)
                         generated_file = None
-                        
-                        if visual_match:
-                            prompt_text = visual_match.group(1).strip()
-                            
+                        if prompt_text:
                             # STYLEGUIDE INJECTION: Append content of .style files for consistency
                             style_dir = pathlib.Path("./knowledge")
                             if style_dir.exists():
@@ -490,9 +501,6 @@ async def on_message(message):
                                     if style_refs:
                                         prompt_text += "\n\n[MANDATORY STYLE INSTRUCTIONS]:" + "".join(style_refs)
 
-                            # Clean the prompt from the response
-                            res_text = re.sub(visual_prompt_pattern, "", res_text, flags=re.DOTALL).strip()
-                            
                             try:
                                 # Nano Banana Image Generation
                                 img_response = client_genai.models.generate_content(
@@ -500,10 +508,6 @@ async def on_message(message):
                                     contents=prompt_text
                                 )
                                 
-                                # Access generated image bytes
-                                # The SDK usually returns this in candidates -> parts -> data
-                                # or candidates -> parts -> inline_data. For Imagen models it might vary.
-                                # Following user request for nano banana:
                                 if hasattr(img_response, 'generated_images') and img_response.generated_images:
                                     image_bytes = img_response.generated_images[0].image.image_bytes
                                     generated_file = discord.File(io.BytesIO(image_bytes), filename="visual.png")
@@ -514,14 +518,12 @@ async def on_message(message):
                                         generated_file = discord.File(io.BytesIO(part.inline_data.data), filename="visual.png")
                                 
                                 if not generated_file:
-                                    # Try to find a reason in candidates (e.g. SAFETY)
                                     finish_reason = "Unknown"
                                     if img_response.candidates:
                                         finish_reason = img_response.candidates[0].finish_reason
                                     res_text += f"\n\n*The mists of the Spire obscure your vision... (Image failed: {finish_reason})*"
                             except Exception as e:
                                 err_str = str(e)
-                                # Make safety errors more readable
                                 if "SAFETY" in err_str.upper():
                                     err_str = "Safety block triggered (Prompt violates visual safety policies)"
                                 print(f"❌ Image Generation Failed: {e}")
@@ -557,7 +559,6 @@ async def on_message(message):
                     
                     # Check if this is a retryable rate limit error
                     if "RESOURCE_EXHAUSTED" in error_str:
-                        import asyncio
                         
                         # LAST ATTEMPT CHECK
                         if attempt == 2:
@@ -600,6 +601,9 @@ async def on_message(message):
 # -------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    # Initialize Context and instruction only when running
+    FULL_SYSTEM_INSTRUCTION = load_full_context()
+    
     if "--terminal" in sys.argv:
         run_terminal_mode()
     else:
