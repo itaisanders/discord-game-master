@@ -61,7 +61,6 @@ def load_full_context():
     else:
         print("ℹ️ No extra markdown knowledge found in ./knowledge")
 
-    context_parts.append("\n\nSYSTEM OVERRIDE: DO NOT OUTPUT THE MASTER LEDGER TABLE UNLESS THE USER EXPLICITLY TYPES '/sheet'.")
     return "\n".join(context_parts)
 
 # Initialize System Instruction
@@ -214,7 +213,7 @@ async def on_message(message):
                 
                 # Format text with the required @Username mapping
                 if not is_bot:
-                    formatted_text = f"User [@{msg.author.name}]: {content_text}"
+                    formatted_text = f"User [Name: @{msg.author.name}, ID: <@{msg.author.id}>]: {content_text}"
                 else:
                     formatted_text = content_text
                     
@@ -269,7 +268,7 @@ async def on_message(message):
                     )
 
                     # Username Injection & Generation
-                    response = chat.send_message(f"User [@{message.author.name}]: {message.content}")
+                    response = chat.send_message(f"User [Name: @{message.author.name}, ID: <@{message.author.id}>]: {message.content}")
                     
                     if response.text:
                         res_text = response.text
