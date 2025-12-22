@@ -74,6 +74,16 @@ Whenever you need to present a table (Character Sheets, Shop Inventories, Loot, 
 Title: [Title of the Table]
 Header 1 | Header 2 | Header 3
 Row 1 Col 1 | Row 1 Col 2 | Row 1 Col 3
+Row 2 Col 1 | Row 2 Col 2 | Row 2 Col 3
+```
+
+for example:
+
+```DATA_TABLE
+Title: Party Status
+Character | HP | Status
+Alistair | 12/15 | Poisoned
+Elara | 8/20 | Healthy
 ```
 
 ## 12. Validated Output & Notification Protocol

@@ -16,3 +16,4 @@ pytest-asyncio
 
 # Visualization
 tqdm
+prettytable
