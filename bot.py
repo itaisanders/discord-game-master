@@ -234,50 +234,83 @@ async def on_message(message):
                     parts=[types.Part(text="*(Acknowledging history context...)*")]
                 ))
 
-            # RAG Tooling
-            chat = client_genai.chats.create(
-                model=AI_MODEL,
-                config=types.GenerateContentConfig(
-                    system_instruction=FULL_SYSTEM_INSTRUCTION,
-                    safety_settings=safety_settings,
-                    tools=[types.Tool(
-                        file_search=types.FileSearch(
-                            file_search_store_names=[STORE_ID]
-                        )
-                    )]
-                ),
-                history=gemini_history
-            )
-
-            # Username Injection
-            response = chat.send_message(f"User [@{message.author.name}]: {message.content}")
+            # Retry Loop for Robustness
+            current_model = AI_MODEL
+            fallback_triggered = False
             
-            if response.text:
-                res_text = response.text
-                if len(res_text) > 2000:
-                    for i in range(0, len(res_text), 2000):
-                        await message.channel.send(res_text[i:i+2000])
-                else:
-                    await message.channel.send(res_text)
+            for attempt in range(3): # Try up to 3 times
+                try:
+                    # RAG Tooling
+                    chat = client_genai.chats.create(
+                        model=current_model,
+                        config=types.GenerateContentConfig(
+                            system_instruction=FULL_SYSTEM_INSTRUCTION,
+                            safety_settings=safety_settings,
+                            tools=[types.Tool(
+                                file_search=types.FileSearch(
+                                    file_search_store_names=[STORE_ID]
+                                )
+                            )]
+                        ),
+                        history=gemini_history
+                    )
+
+                    # Username Injection & Generation
+                    response = chat.send_message(f"User [@{message.author.name}]: {message.content}")
+                    
+                    if response.text:
+                        res_text = response.text
+                        if len(res_text) > 2000:
+                            for i in range(0, len(res_text), 2000):
+                                await message.channel.send(res_text[i:i+2000])
+                        else:
+                            await message.channel.send(res_text)
+                        
+                        break # Success - Exit Loop
+
+                except Exception as e:
+                    error_str = str(e)
+                    
+                    # Check if this is a retryable rate limit error
+                    if "RESOURCE_EXHAUSTED" in error_str:
+                        import re
+                        import asyncio
+                        
+                        # LAST ATTEMPT CHECK
+                        if attempt == 2:
+                            await message.channel.send(f"❌ Failed after 3 attempts. Please try again later.\nError: {e}")
+                            break
+
+                        # 1. Parse Duration
+                        wait_time_match = re.search(r"Please retry in (\d+\.?\d*)s", error_str)
+                        if wait_time_match:
+                            wait_s = float(wait_time_match.group(1))
+                            msg = f"⚠️ Rate limit reached. Cooling down... I will attempt to answer again in {wait_s} seconds."
+                        else:
+                            wait_s = 60 # Default cool down
+                            msg = f"⚠️ Rate limit reached. Cooling down... I will attempt to answer again in {wait_s} seconds."
+                            
+                            # 2. Model Fallback Check (Daily Quota)
+                            if ("Quota" in error_str or "quota" in error_str) and not fallback_triggered:
+                                fallback_triggered = True
+                                current_model = "gemini-1.5-flash-8b"
+                                msg = f"⚠️ Daily Quota exhausted. Switching to fallback model: **{current_model}**. Retrying in {wait_s}s..."
+
+                        # 3. Notify & Wait
+                        print(f"⏳ Retry {attempt+1}/3: Waiting {wait_s}s... ({error_str})")
+                        await message.channel.send(msg)
+                        await asyncio.sleep(wait_s)
+                        continue # Retry
+                    
+                    else:
+                        # Non-retryable error
+                        print(f"❌ GM Technical Error: {e}")
+                        await message.channel.send(f"⚠️ [Meta: System Error: {e}]")
+                        break
 
         except Exception as e:
-            error_str = str(e)
-            if "RESOURCE_EXHAUSTED" in error_str:
-                import re
-                print(f"⚠️ Quota Exceeded: {e}")
-                
-                # Check for specific wait time in message
-                wait_time_match = re.search(r"Please retry in (\d+\.?\d*)s", error_str)
-                if wait_time_match:
-                    seconds = float(wait_time_match.group(1))
-                    friendly_msg = f"⏳ **The GM is thinking too hard!** (Rate Limit Hit)\nPlease wait **{seconds:.1f} seconds** before your next action."
-                else:
-                    friendly_msg = "⏳ **The GM needs a moment.** (Daily Token Quota Hit)\nPlease wait a minute or check usage limits."
-                
-                await message.channel.send(friendly_msg)
-            else:
-                print(f"❌ GM Technical Error: {e}")
-                await message.channel.send(f"⚠️ [Meta: System Error: {e}]")
+            print(f"❌ General Logic Error: {e}")
+            await message.channel.send(f"⚠️ [Meta: System Logic Error: {e}]")
 
 # -------------------------------------------------------------------------
 # ENTRY POINT
