@@ -261,8 +261,23 @@ async def on_message(message):
                     await message.channel.send(res_text)
 
         except Exception as e:
-            print(f"❌ GM Technical Error: {e}")
-            await message.channel.send(f"⚠️ [Meta: System Error: {e}]")
+            error_str = str(e)
+            if "RESOURCE_EXHAUSTED" in error_str:
+                import re
+                print(f"⚠️ Quota Exceeded: {e}")
+                
+                # Check for specific wait time in message
+                wait_time_match = re.search(r"Please retry in (\d+\.?\d*)s", error_str)
+                if wait_time_match:
+                    seconds = float(wait_time_match.group(1))
+                    friendly_msg = f"⏳ **The GM is thinking too hard!** (Rate Limit Hit)\nPlease wait **{seconds:.1f} seconds** before your next action."
+                else:
+                    friendly_msg = "⏳ **The GM needs a moment.** (Daily Token Quota Hit)\nPlease wait a minute or check usage limits."
+                
+                await message.channel.send(friendly_msg)
+            else:
+                print(f"❌ GM Technical Error: {e}")
+                await message.channel.send(f"⚠️ [Meta: System Error: {e}]")
 
 # -------------------------------------------------------------------------
 # ENTRY POINT
