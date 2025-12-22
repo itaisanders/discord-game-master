@@ -384,6 +384,13 @@ async def on_message(message):
                                 res_text += f"\n\n*The mists of the Spire obscure your vision... (Technical Error: {err_str})*"
 
                         # -------------------------------------------------------------
+                        # SILENCE_SIGNAL Interceptor
+                        # -------------------------------------------------------------
+                        if "[SIGNAL: SILENCE]" in res_text:
+                            print(f"🤫 Bot is observing. Signal detected from {current_model}.")
+                            break # Exit the retry loop and do not send any message
+                        
+                        # -------------------------------------------------------------
                         # Sending Logic
                         # -------------------------------------------------------------
                         if len(res_text) > 2000:
