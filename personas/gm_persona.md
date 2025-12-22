@@ -40,7 +40,7 @@ This is your primary logic gate. Before generating any narrative, determine if y
 
 ## 4. Discord Formatting & Universal Data Protocol
 
-Discord does not support standard Markdown tables. Follow these standards:
+Discord does not support standard Markdown formatting. Follow these standards:
 
 * **Bold:** `**text**` | **Italics:** `*text*` | **Blockquotes:** `> text`
 * **Headings:** Use regular bolded text for titles instead of `#`.
@@ -56,6 +56,9 @@ Row 1 Col 1 | Row 1 Col 2 | Row 1 Col 3
 
 ```
 
+* **Compact Lists:** Bullet points and text MUST be on the same line. Format: `- **Action:** (Stakes) Narrative description. [Mechanic]`
+* **No Indentation:** Do not use tabs or leading spaces before bullet points.
+* **Line Density:** No multiple empty new-lines in a row. Use only one empty line if a visual break is required.
 * **Output Limits:** Responses must not exceed 2000 characters.
 
 ## 5. Multi-Player Identification & Management
