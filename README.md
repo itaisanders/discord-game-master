@@ -93,3 +93,19 @@ Run the automated test suite to verify environment integrity and API access:
 ```bash
 pytest
 ```
+
+---
+
+## 🎨 Credits & Game Design Attributions
+
+This project implements narrative and mechanical logic derived from various tabletop RPG design philosophies. Please see [ATTRIBUTION.md](./ATTRIBUTION.md) for full details and licensing information regarding these game systems.
+
+## ⚖️ License & Attribution
+
+This project is licensed under the **MIT License**.
+
+### Third-Party Libraries
+*   [discord.py](https://github.com/Rapptz/discord.py) — MIT License
+*   [google-genai](https://github.com/google/generative-ai-python) — Apache License 2.0
+*   [python-dotenv](https://github.com/theskumar/python-dotenv) — BSD-3-Clause License
+*   [pytest](https://github.com/pytest-dev/pytest) — MIT License
