@@ -1,6 +1,7 @@
-
 import os
 import sys
+import re
+import io
 import discord
 from google import genai
 from google.genai import types
@@ -222,7 +223,6 @@ async def on_message(message):
                     # If this bot message contains a Markdown table (detected by separator line), strip it.
                     # This stops the LLM from seeing the table in recent history and repeating it.
                     if "|" in formatted_text and "---" in formatted_text:
-                        import re
                         # Regex to find markdown table blocks:
                         # Looks for the separator row `| --- |` and surrounding pipe-rows
                         table_pattern = r"(\|[^\n]+\|\n\|[- :]+\|(\n\|[^\n]+\|)+)"
@@ -277,7 +277,6 @@ async def on_message(message):
                         # -------------------------------------------------------------
                         # DATA_TABLE Parsing & PrettyTable Integration
                         # -------------------------------------------------------------
-                        import re
                         data_table_pattern = r"```DATA_TABLE\n(.*?)```"
                         
                         def render_table_as_ascii(match):
@@ -323,13 +322,82 @@ async def on_message(message):
                         res_text = re.sub(data_table_pattern, render_table_as_ascii, res_text, flags=re.DOTALL).strip()
                         
                         # -------------------------------------------------------------
+                        # VISUAL_PROMPT Parsing & Image Generation
+                        # -------------------------------------------------------------
+                        visual_prompt_pattern = r"```VISUAL_PROMPT\n(.*?)```"
+                        visual_match = re.search(visual_prompt_pattern, res_text, re.DOTALL)
+                        generated_file = None
+                        
+                        if visual_match:
+                            prompt_text = visual_match.group(1).strip()
+                            
+                            # STYLEGUIDE INJECTION: Append content of .style files for consistency
+                            style_dir = pathlib.Path("./knowledge")
+                            if style_dir.exists():
+                                style_files = list(style_dir.glob("*.style"))
+                                if style_files:
+                                    style_refs = []
+                                    for sf in style_files:
+                                        try:
+                                            style_refs.append(f"\n--- STYLE REFERENCE: {sf.name} ---\n{sf.read_text(encoding='utf-8')}")
+                                        except Exception as e:
+                                            print(f"⚠️ Failed to read style file {sf.name}: {e}")
+                                    
+                                    if style_refs:
+                                        prompt_text += "\n\n[MANDATORY STYLE INSTRUCTIONS]:" + "".join(style_refs)
+
+                            # Clean the prompt from the response
+                            res_text = re.sub(visual_prompt_pattern, "", res_text, flags=re.DOTALL).strip()
+                            
+                            try:
+                                # Nano Banana Image Generation
+                                img_response = client_genai.models.generate_content(
+                                    model="gemini-2.5-flash-image",
+                                    contents=prompt_text
+                                )
+                                
+                                # Access generated image bytes
+                                # The SDK usually returns this in candidates -> parts -> data
+                                # or candidates -> parts -> inline_data. For Imagen models it might vary.
+                                # Following user request for nano banana:
+                                if hasattr(img_response, 'generated_images') and img_response.generated_images:
+                                    image_bytes = img_response.generated_images[0].image.image_bytes
+                                    generated_file = discord.File(io.BytesIO(image_bytes), filename="visual.png")
+                                elif img_response.candidates and img_response.candidates[0].content.parts:
+                                    # Fallback for standard multimodal response
+                                    part = img_response.candidates[0].content.parts[0]
+                                    if part.inline_data:
+                                        generated_file = discord.File(io.BytesIO(part.inline_data.data), filename="visual.png")
+                                
+                                if not generated_file:
+                                    # Try to find a reason in candidates (e.g. SAFETY)
+                                    finish_reason = "Unknown"
+                                    if img_response.candidates:
+                                        finish_reason = img_response.candidates[0].finish_reason
+                                    res_text += f"\n\n*The mists of the Spire obscure your vision... (Image failed: {finish_reason})*"
+                            except Exception as e:
+                                err_str = str(e)
+                                # Make safety errors more readable
+                                if "SAFETY" in err_str.upper():
+                                    err_str = "Safety block triggered (Prompt violates visual safety policies)"
+                                print(f"❌ Image Generation Failed: {e}")
+                                res_text += f"\n\n*The mists of the Spire obscure your vision... (Technical Error: {err_str})*"
+
+                        # -------------------------------------------------------------
                         # Sending Logic
                         # -------------------------------------------------------------
                         if len(res_text) > 2000:
-                            for i in range(0, len(res_text), 2000):
-                                await message.channel.send(res_text[i:i+2000])
+                            parts = [res_text[i:i+2000] for i in range(0, len(res_text), 2000)]
+                            for i, chunk in enumerate(parts):
+                                if i == len(parts) - 1 and generated_file:
+                                    await message.channel.send(chunk, file=generated_file)
+                                else:
+                                    await message.channel.send(chunk)
                         else:
-                            await message.channel.send(res_text)
+                            if generated_file:
+                                await message.channel.send(res_text, file=generated_file)
+                            else:
+                                await message.channel.send(res_text)
                         
                         break # Success - Exit Loop
 
@@ -338,7 +406,6 @@ async def on_message(message):
                     
                     # Check if this is a retryable rate limit error
                     if "RESOURCE_EXHAUSTED" in error_str:
-                        import re
                         import asyncio
                         
                         # LAST ATTEMPT CHECK
