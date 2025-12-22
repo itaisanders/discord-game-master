@@ -1,0 +1,22 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+
+# Project Directories (Keep folders but ignore contents)
+pdf/*
+!pdf/.gitkeep
+
+knowledge/*
+!knowledge/.gitkeep
+
+# OS specific
+.DS_Store
+Thumbs.db
