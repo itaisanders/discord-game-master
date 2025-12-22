@@ -273,11 +273,86 @@ async def on_message(message):
                     
                     if response.text:
                         res_text = response.text
+                        embeds_to_send = []
+                        
+                        # -------------------------------------------------------------
+                        # DATA_TABLE Parsing & Embed Extraction
+                        # -------------------------------------------------------------
+                        # Check if response contains DATA_TABLE blocks
+                        import re
+                        data_table_pattern = r"```DATA_TABLE\n(.*?)```"
+                        tables = re.findall(data_table_pattern, res_text, re.DOTALL)
+                        
+                        if tables:
+                            # If tables found, strip them from the main text so they don't clutter the view
+                            res_text = re.sub(data_table_pattern, "", res_text, flags=re.DOTALL).strip()
+                            
+                            for table_block in tables:
+                                try:
+                                    lines = [l.strip() for l in table_block.strip().split('\n') if l.strip()]
+                                    
+                                    # Default values
+                                    title = "Data Table"
+                                    headers = []
+                                    rows = []
+                                    
+                                    # Parse Lines
+                                    for line in lines:
+                                        if line.startswith("Title:"):
+                                            title = line.replace("Title:", "").strip()
+                                        elif "|" in line:
+                                            # It's a row (Header or Data)
+                                            cols = [c.strip() for c in line.split('|')]
+                                            if not headers:
+                                                headers = cols
+                                            else:
+                                                rows.append(cols)
+                                    
+                                    # Construct Embed
+                                    embed = discord.Embed(title=title, color=0x2b2d31) # Dark theme color
+                                    
+                                    # We need to map columns to fields.
+                                    # Limit: Discord Embeds have 25 fields max.
+                                    # If a table has multiple rows, we might need to inline them or use Description.
+                                    # Strategy: Concatenate Row Data for each Column to make vertical lists.
+                                    
+                                    if headers and rows:
+                                        for i, header in enumerate(headers):
+                                            if i < len(rows[0]): # Safety check
+                                                # Join all values for this column with newlines
+                                                col_values = [r[i] for r in rows if i < len(r)]
+                                                field_value = "\n".join(col_values)
+                                                
+                                                # Discord Field Value Limit is 1024 chars
+                                                if len(field_value) > 1024:
+                                                    field_value = field_value[:1021] + "..."
+                                                    
+                                                embed.add_field(name=header, value=field_value, inline=True)
+                                    
+                                    embeds_to_send.append(embed)
+                                    
+                                except Exception as e:
+                                    print(f"⚠️ Failed to parse DATA_TABLE: {e}")
+                                    # If parsing fails, just leave the text as is or continue? 
+                                    # We already stripped it, so maybe safer to not strip if fail? 
+                                    # For now, we assume strict adherence to format.
+                        
+                        # -------------------------------------------------------------
+                        # Sending Logic
+                        # -------------------------------------------------------------
                         if len(res_text) > 2000:
                             for i in range(0, len(res_text), 2000):
-                                await message.channel.send(res_text[i:i+2000])
+                                chunk = res_text[i:i+2000]
+                                # Attach embeds only to the last chunk
+                                if i + 2000 >= len(res_text) and embeds_to_send:
+                                    await message.channel.send(chunk, embeds=embeds_to_send)
+                                else:
+                                    await message.channel.send(chunk)
                         else:
-                            await message.channel.send(res_text)
+                            if embeds_to_send:
+                                await message.channel.send(res_text, embeds=embeds_to_send)
+                            else:
+                                await message.channel.send(res_text)
                         
                         break # Success - Exit Loop
 
