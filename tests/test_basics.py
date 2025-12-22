@@ -35,6 +35,10 @@ def test_personas_directory_structure():
     """Critical: Ensure the personas directory exists."""
     assert os.path.isdir("personas"), "The 'personas' directory is missing."
 
+def test_scripts_directory_structure():
+    """Critical: Ensure the scripts directory exists."""
+    assert os.path.isdir("scripts"), "The 'scripts' directory is missing."
+
 def test_target_channel_id_is_int(env_vars):
     """Critical: Ensure TARGET_CHANNEL_ID can be cast to an integer."""
     channel_id = env_vars.get("TARGET_CHANNEL_ID")

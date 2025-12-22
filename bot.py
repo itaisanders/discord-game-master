@@ -27,14 +27,44 @@ except ValueError:
     print("❌ Error: TARGET_CHANNEL_ID must be an integer.")
     exit(1)
 
-# Load Persona (Static Load)
-if os.path.exists(PERSONA_FILE):
-    with open(PERSONA_FILE, "r") as f:
-        SYSTEM_INSTRUCTION = f.read().strip()
-    print("✅ Loaded Apex Game Master persona")
-else:
-    SYSTEM_INSTRUCTION = "You are an amazing Game Master."
-    print(f"⚠️ {PERSONA_FILE} not found, using default instruction.")
+import pathlib
+
+# Load Persona (Dynamic Load)
+def load_full_context():
+    """Loads the base persona and injects any markdown files from ./knowledge."""
+    context_parts = []
+
+    # 1. Load Base Persona
+    if os.path.exists(PERSONA_FILE):
+        with open(PERSONA_FILE, "r") as f:
+            context_parts.append(f.read().strip())
+        print(f"✅ Loaded base persona: {PERSONA_FILE}")
+    else:
+        context_parts.append("You are an amazing Game Master.")
+        print(f"⚠️ {PERSONA_FILE} not found, using default instruction.")
+
+    # 2. Inject Knowledge Files (.md)
+    knowledge_dir = pathlib.Path("./knowledge")
+    injected_files = []
+    
+    if knowledge_dir.exists():
+        for md_file in knowledge_dir.glob("*.md"):
+            try:
+                content = md_file.read_text(encoding="utf-8")
+                context_parts.append(f"\n\n--- FILE: {md_file.name} ---\n\n{content}")
+                injected_files.append(md_file.name)
+            except Exception as e:
+                print(f"❌ Failed to load {md_file.name}: {e}")
+
+    if injected_files:
+        print(f"📚 Injected Knowledge: {', '.join(injected_files)}")
+    else:
+        print("ℹ️ No extra markdown knowledge found in ./knowledge")
+
+    return "\n".join(context_parts)
+
+# Initialize System Instruction
+FULL_SYSTEM_INSTRUCTION = load_full_context()
 
 # 2. Safety Settings
 safety_settings = [
@@ -119,7 +149,7 @@ def run_terminal_mode():
             chat = client_genai.chats.create(
                 model=AI_MODEL,
                 config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_INSTRUCTION,
+                    system_instruction=FULL_SYSTEM_INSTRUCTION,
                     safety_settings=safety_settings,
                     tools=[types.Tool(
                         file_search=types.FileSearch(
@@ -208,7 +238,7 @@ async def on_message(message):
             chat = client_genai.chats.create(
                 model=AI_MODEL,
                 config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_INSTRUCTION,
+                    system_instruction=FULL_SYSTEM_INSTRUCTION,
                     safety_settings=safety_settings,
                     tools=[types.Tool(
                         file_search=types.FileSearch(

@@ -53,9 +53,30 @@ Before running the bot, you must index your game sourcebooks.
 1.  Place your `.pdf` rulebooks into the `pdf/` directory.
 2.  Run the indexer script:
     ```bash
-    python index_knowledge.py
+    python scripts/index_knowledge.py
     ```
 3.  This script will upload the PDFs to Google's GenAI File Store and automatically update your `.env` file with a new `STORE_ID`.
+
+---
+
+## 📜 High-Fidelity RPG Ingestion (Optional)
+
+For superior narrative accuracy, use the **RPG Scribe** tool to convert complex PDFs into verbatim Markdown. This is highly recommended for rules-heavy systems like *Spire* or *Blades in the Dark*.
+
+### 1. Requirements
+Ensure you have the AI layout extensions installed:
+```bash
+pip install -U "pymupdf4llm[ocr,layout]"
+```
+
+### 2. Run Ingestion
+```bash
+python scripts/ingest_rpg_book.py pdf/your_book.pdf [--keep-temp]
+```
+*   **Visual Feedback**: The script uses a progress spinner and bar to show real-time status.
+*   **Logic**: It performs AI-driven layout analysis and transcribes the book in 5-page chunks to ensure zero-omission of spells, gear, or mechanical stats.
+*   **Optional Parameters**: Use `--keep-temp` to preserve the intermediate `_dump.md` and `_raw.txt` files in the `knowledge/` directory for manual review.
+*   **Output**: Saves a high-fidelity `.md` file to the `knowledge/` directory.
 
 ---
 
@@ -83,7 +104,9 @@ python bot.py --terminal
 ## 🧩 Project Structure
 
 *   `bot.py`: Main application logic (Discord client + Terminal loop).
-*   `index_knowledge.py`: Utility to scan `pdf/` and update the RAG store.
+*   `scripts/index_knowledge.py`: Utility to scan `pdf/` and update the RAG store.
+*   `scripts/ingest_rpg_book.py`: High-fidelity RPG book transcription tool.
+*   `scripts/check_env.py`: Environment validation utility.
 *   `personas/gm_persona.md`: The "System Instructions" defining the GM's behavior and rules.
 *   `pdf/`: Directory for your game rulebooks.
 *   `tests/`: Automated test suite (run via `pytest`).
