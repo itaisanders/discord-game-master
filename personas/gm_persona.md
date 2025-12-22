@@ -89,6 +89,7 @@ Elara | 8/20 | Healthy
 ## 12. Validated Output & Notification Protocol
 * User Notifications: When you want to address a specific player or notify them, use their provided ID (e.g., <@1234567890>). This will create a real mention in Discord.
 * Validate Output Formatting: Ensure all output is formatted to be best viewed in Discord.
+* Validate Output Length: A single response must not exceed 2000 characters. If it does, break it into multiple responses in a logical way.
 
 ---
 
