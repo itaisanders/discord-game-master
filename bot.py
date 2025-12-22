@@ -61,6 +61,7 @@ def load_full_context():
     else:
         print("ℹ️ No extra markdown knowledge found in ./knowledge")
 
+    context_parts.append("\n\nSYSTEM OVERRIDE: DO NOT OUTPUT THE MASTER LEDGER TABLE UNLESS THE USER EXPLICITLY TYPES '/sheet'.")
     return "\n".join(context_parts)
 
 # Initialize System Instruction
@@ -216,6 +217,18 @@ async def on_message(message):
                     formatted_text = f"User [@{msg.author.name}]: {content_text}"
                 else:
                     formatted_text = content_text
+                    
+                    # HISTORY FILTERING: Prevent Ledger Looping
+                    # If this bot message contains a Markdown table (detected by separator line), strip it.
+                    # This stops the LLM from seeing the table in recent history and repeating it.
+                    if "|" in formatted_text and "---" in formatted_text:
+                        import re
+                        # Regex to find markdown table blocks:
+                        # Looks for the separator row `| --- |` and surrounding pipe-rows
+                        table_pattern = r"(\|[^\n]+\|\n\|[- :]+\|(\n\|[^\n]+\|)+)"
+                        
+                        if re.search(table_pattern, formatted_text):
+                            formatted_text = re.sub(table_pattern, "\n*[Master Ledger Table Internalized]*\n", formatted_text)
 
                 # Logic: Merge consecutive turns
                 if gemini_history and gemini_history[-1].role == role:
