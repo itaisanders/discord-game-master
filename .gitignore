@@ -17,6 +17,9 @@ pdf/*
 knowledge/*
 !knowledge/.gitkeep
 
+memory/*
+!memory/.gitkeep
+
 # OS specific
 .DS_Store
 Thumbs.db

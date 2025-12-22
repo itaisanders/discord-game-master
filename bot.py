@@ -7,6 +7,9 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from prettytable import PrettyTable
+import asyncio
+import time
+import pathlib
 
 # 1. Setup & Configuration
 load_dotenv()
@@ -64,6 +67,72 @@ def load_full_context():
         print("ℹ️ No extra markdown knowledge found in ./knowledge")
 
     return "\n".join(context_parts)
+
+def load_memory():
+    """Loads all .ledger files from ./memory."""
+    memory_parts = []
+    memory_dir = pathlib.Path("./memory")
+    if memory_dir.exists():
+        for l_file in memory_dir.glob("*.ledger"):
+            try:
+                content = l_file.read_text(encoding="utf-8")
+                memory_parts.append(f"\n--- CAMPAIGN LEDGER: {l_file.name} ---\n{content}")
+            except Exception as e:
+                print(f"❌ Failed to load ledger {l_file.name}: {e}")
+    return "\n".join(memory_parts)
+
+def update_ledgers_logic(update_facts):
+    """Uses the Memory Architect to update physical ledger files."""
+    try:
+        current_memory = load_memory()
+        architect_persona_path = pathlib.Path("personas/memory_architect_persona.md")
+        if not architect_persona_path.exists():
+            print("⚠️ Memory Architect persona missing!")
+            return
+            
+        persona_content = architect_persona_path.read_text(encoding="utf-8")
+        
+        prompt = f"# CURRENT LEDGER STATE\n{current_memory if current_memory else '[Empty]'}\n\n# NEW FACTS TO INCORPORATE\n{update_facts}"
+        
+        response = client_genai.models.generate_content(
+            model=AI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=persona_content,
+                temperature=0.1
+            )
+        )
+        if response.text:
+            save_ledger_files(response.text)
+    except Exception as e:
+        print(f"❌ Ledger Update Error: {e}")
+
+def save_ledger_files(response_text):
+    """Parses FILE: blocks from AI response and saves them to ./memory."""
+    count = 0
+    try:
+        # Parse ```FILE: filename.ledger\ncontent\n```
+        file_pattern = r"```FILE: (.*?)\n(.*?)```"
+        updates = re.findall(file_pattern, response_text, re.DOTALL)
+        
+        if not updates:
+            # Try fallback for non-backticked blocks if any
+            file_pattern_nb = r"FILE: (.*?\.ledger)\n(.*?)(?=FILE:|$)"
+            updates = re.findall(file_pattern_nb, response_text, re.DOTALL)
+
+        for filename, content in updates:
+            filename = filename.strip()
+            if not filename.endswith(".ledger"):
+                filename += ".ledger"
+            
+            filepath = pathlib.Path("./memory") / filename
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+            filepath.write_text(content.strip(), encoding="utf-8")
+            print(f"💾 Ledger Saved: {filename}")
+            count += 1
+    except Exception as e:
+        print(f"❌ Error saving ledgers: {e}")
+    return count
 
 # Initialize System Instruction
 FULL_SYSTEM_INSTRUCTION = load_full_context()
@@ -198,6 +267,63 @@ async def on_message(message):
     if message.channel.id != TARGET_CHANNEL_ID:
         return
 
+    # 1. SPECIAL COMMAND: /reset_memory
+    if message.content.strip().lower() == "/reset_memory":
+        try:
+            await message.channel.send("⚠️ **WARNING**: This will wipe all current memory (.ledger files) and rebuild them from the channel history. This can take 1-2 minutes.\nDo you want to proceed? Type **'yes'** to confirm within 2 minutes.")
+            
+            def check(m):
+                return m.author == message.author and m.channel == message.channel and m.content.lower().strip() == "yes"
+                
+            confirm_msg = await client_discord.wait_for('message', check=check, timeout=120)
+            await message.channel.send("🔄 **Memory Reconstruction Started...** Analyzing history.")
+            
+            # Fetch History
+            history_messages = [msg async for msg in message.channel.history(limit=200)]
+            history_messages.reverse()
+            
+            history_text = ""
+            for msg in history_messages:
+                name = msg.author.name
+                content = msg.content if msg.content else "[Image/Other]"
+                history_text += f"{name}: {content}\n"
+            
+            # Persona Load
+            architect_persona_path = pathlib.Path("personas/memory_architect_persona.md")
+            if not architect_persona_path.exists():
+                await message.channel.send("❌ Error: Memory Architect persona missing.")
+                return
+            persona_content = architect_persona_path.read_text(encoding="utf-8")
+            
+            prompt = f"# FULL CHANNEL HISTORY RECONSTRUCTION\n\n{history_text}\n\nBuild a fresh set of campaign ledgers based on this history."
+            
+            # Clear old Ledger Files
+            memory_dir = pathlib.Path("./memory")
+            for f in memory_dir.glob("*.ledger"):
+                f.unlink()
+                
+            # Call Architect
+            response = client_genai.models.generate_content(
+                model=AI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=persona_content,
+                    temperature=0.1
+                )
+            )
+            
+            if response.text:
+                count = save_ledger_files(response.text)
+                await message.channel.send(f"✅ **Memory Rebuilt.** Created/Updated {count} ledgers. Use `/ledger` or `/sheet` to verify.")
+            else:
+                await message.channel.send("❌ Error: Memory Architect returned no data.")
+                
+        except asyncio.TimeoutError:
+            await message.channel.send("⏳ Reset cancelled (Timeout).")
+        except Exception as e:
+            await message.channel.send(f"❌ Error during reset: {e}")
+        return
+
     async with message.channel.typing():
         try:
             # Context Continuity: Fetch history
@@ -253,11 +379,15 @@ async def on_message(message):
             
             for attempt in range(3): # Try up to 3 times
                 try:
+                    # Inject Persistent Memory into System Context
+                    memory_context = load_memory()
+                    dynamic_system_instruction = f"{FULL_SYSTEM_INSTRUCTION}\n\n# CAMPAIGN PERSISTENT MEMORY\n{memory_context}"
+
                     # RAG Tooling
                     chat = client_genai.chats.create(
                         model=current_model,
                         config=types.GenerateContentConfig(
-                            system_instruction=FULL_SYSTEM_INSTRUCTION,
+                            system_instruction=dynamic_system_instruction,
                             safety_settings=safety_settings,
                             tools=[types.Tool(
                                 file_search=types.FileSearch(
@@ -321,6 +451,20 @@ async def on_message(message):
                         # Replace all DATA_TABLE blocks with ASCII versions
                         res_text = re.sub(data_table_pattern, render_table_as_ascii, res_text, flags=re.DOTALL).strip()
                         
+                        # -------------------------------------------------------------
+                        # MEMORY_UPDATE Parsing & Persistence logic
+                        # -------------------------------------------------------------
+                        memory_update_pattern = r"```MEMORY_UPDATE\n(.*?)```"
+                        memory_match = re.search(memory_update_pattern, res_text, re.DOTALL)
+                        
+                        if memory_match:
+                            facts_to_remember = memory_match.group(1).strip()
+                            # Clean it from the user-facing text
+                            res_text = re.sub(memory_update_pattern, "", res_text, flags=re.DOTALL).strip()
+                            # Run the background persistence update
+                            # Note: In a production bot, you might want to run this in a non-blocking task
+                            update_ledgers_logic(facts_to_remember)
+
                         # -------------------------------------------------------------
                         # VISUAL_PROMPT Parsing & Image Generation
                         # -------------------------------------------------------------
