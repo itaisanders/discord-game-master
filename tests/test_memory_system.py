@@ -2,7 +2,7 @@
 import pytest
 import pathlib
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from bot import save_ledger_files, update_ledgers_logic
 
 @pytest.fixture
@@ -40,10 +40,11 @@ Fact 2
          assert mock_file.parent.mkdir.called
          assert mock_file.write_text.called
 
-@patch("bot.client_genai.models.generate_content")
+@pytest.mark.asyncio
+@patch("bot.client_genai.aio.models.generate_content", new_callable=AsyncMock)
 @patch("bot.load_memory")
 @patch("bot.save_ledger_files")
-def test_update_ledgers_logic(mock_save, mock_load, mock_gen, temp_memory_dir):
+async def test_update_ledgers_logic(mock_save, mock_load, mock_gen, temp_memory_dir):
     """Test the coordination of update_ledgers_logic."""
     mock_load.return_value = "Existing content"
     
@@ -56,7 +57,7 @@ def test_update_ledgers_logic(mock_save, mock_load, mock_gen, temp_memory_dir):
     with patch("bot.pathlib.Path") as mock_path:
         mock_path.return_value.exists.return_value = True
         mock_path.return_value.read_text.return_value = "Persona content"
-        update_ledgers_logic("Fact to add")
+        await update_ledgers_logic("Fact to add")
     
     mock_gen.assert_called_once()
     mock_save.assert_called_once_with("FILE: update.ledger\nNew content")

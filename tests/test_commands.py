@@ -50,7 +50,8 @@ async def test_reset_memory_command_success():
     with patch("bot.TARGET_CHANNEL_ID", 123):
         with patch("bot.client_discord.wait_for", new_callable=AsyncMock) as mock_wait:
             mock_wait.return_value = confirm_msg
-            with patch("bot.client_genai.models.generate_content", return_value=mock_res):
+            with patch("bot.client_genai.aio.models.generate_content", new_callable=AsyncMock) as mock_gen:
+                mock_gen.return_value = mock_res
                 with patch("bot.pathlib.Path") as mock_path:
                     mock_path.return_value.glob.return_value = [] # no old files
                     mock_path.return_value.exists.return_value = True

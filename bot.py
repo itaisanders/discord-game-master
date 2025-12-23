@@ -92,8 +92,8 @@ def load_memory():
                 print(f"❌ Failed to load ledger {l_file.name}: {e}")
     return "\n".join(memory_parts)
 
-def update_ledgers_logic(update_facts):
-    """Uses the Memory Architect to update physical ledger files."""
+async def update_ledgers_logic(update_facts):
+    """Uses the Memory Architect to update physical ledger files asynchronously."""
     try:
         current_memory = load_memory()
         architect_persona_path = pathlib.Path("personas/memory_architect_persona.md")
@@ -105,7 +105,8 @@ def update_ledgers_logic(update_facts):
         
         prompt = f"# CURRENT LEDGER STATE\n{current_memory if current_memory else '[Empty]'}\n\n# NEW FACTS TO INCORPORATE\n{update_facts}"
         
-        response = client_genai.models.generate_content(
+        # Use AIO client to prevent blocking
+        response = await client_genai.aio.models.generate_content(
             model=AI_MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -374,8 +375,8 @@ async def on_message(message):
             for f in memory_dir.glob("*.ledger"):
                 f.unlink()
                 
-            # Call Architect
-            response = client_genai.models.generate_content(
+            # Call Architect (Async)
+            response = await client_genai.aio.models.generate_content(
                 model=AI_MODEL,
                 contents=prompt,
                 config=types.GenerateContentConfig(
@@ -455,8 +456,8 @@ async def on_message(message):
                     memory_context = load_memory()
                     dynamic_system_instruction = f"{FULL_SYSTEM_INSTRUCTION}\n\n# CAMPAIGN PERSISTENT MEMORY\n{memory_context}"
 
-                    # RAG Tooling
-                    chat = client_genai.chats.create(
+                    # Async RAG Chat
+                    chat = client_genai.aio.chats.create(
                         model=current_model,
                         config=types.GenerateContentConfig(
                             system_instruction=dynamic_system_instruction,
@@ -470,8 +471,8 @@ async def on_message(message):
                         history=gemini_history
                     )
 
-                    # Username Injection & Generation
-                    response = chat.send_message(f"User [Name: @{message.author.name}, ID: <@{message.author.id}>]: {message.content}")
+                    # Username Injection & Generation (Awaited)
+                    response = await chat.send_message(f"User [Name: @{message.author.name}, ID: <@{message.author.id}>]: {message.content}")
                     
                     if response.text:
                         res_text = response.text
@@ -482,7 +483,7 @@ async def on_message(message):
                         res_text, facts_to_remember, prompt_text = process_response_formatting(res_text)
 
                         if facts_to_remember:
-                            update_ledgers_logic(facts_to_remember)
+                            await update_ledgers_logic(facts_to_remember)
 
                         generated_file = None
                         if prompt_text:
@@ -502,8 +503,8 @@ async def on_message(message):
                                         prompt_text += "\n\n[MANDATORY STYLE INSTRUCTIONS]:" + "".join(style_refs)
 
                             try:
-                                # Nano Banana Image Generation
-                                img_response = client_genai.models.generate_content(
+                                # Async Nano Banana Image Generation
+                                img_response = await client_genai.aio.models.generate_content(
                                     model="gemini-2.5-flash-image",
                                     contents=prompt_text
                                 )
