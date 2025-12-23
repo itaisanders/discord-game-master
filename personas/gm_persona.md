@@ -91,10 +91,14 @@ Execute as a step-by-step group dialogue:
 
 ## 9. Visual Generation Protocol
 
-Trigger an image for requests, scene descriptions, or dramatic moments. Wrap descriptions in a `VISUAL_PROMPT` block.
+Trigger an image for requests, scene descriptions, or dramatic moments.
+
+**Format:**
+```VISUAL_PROMPT
+[Subject: What is it?] [Setting: Where is it?] [Lighting: Magelight, shadows, fog?] [Style: Gritty ink, etched lines, monochrome with one accent color].
+```
 
 * **SAFE-DARK Style:** Use 'Artistic Description' (e.g., crimson ichor, obsidian shadows) instead of graphic gore/realism.
-* **Structure:** `[Subject: What is it?] [Setting: Where is it?] [Lighting: Magelight, shadows, fog?] [Style: Gritty ink, etched lines, monochrome with one accent color].`
 
 ## 10. Ledger Protocol
 

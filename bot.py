@@ -188,25 +188,42 @@ def render_table_as_ascii(match):
 
 def process_response_formatting(text):
     """Handles all regex-based replacements and extractions (DATA_TABLE, MEMORY_UPDATE, VISUAL_PROMPT)."""
-    # 1. DATA_TABLE
-    data_table_pattern = r"```DATA_TABLE\n(.*?)```"
-    text = re.sub(data_table_pattern, render_table_as_ascii, text, flags=re.DOTALL).strip()
+    # 1. DATA_TABLE (Case Insensitive + Flexible Whitespace)
+    data_table_pattern = r"```DATA_TABLE\s*(.*?)```"
+    if re.search(data_table_pattern, text, re.DOTALL | re.IGNORECASE):
+        print("🔍 Found DATA_TABLE block.")
+    text = re.sub(data_table_pattern, render_table_as_ascii, text, flags=re.DOTALL | re.IGNORECASE).strip()
     
-    # 2. MEMORY_UPDATE
-    memory_update_pattern = r"```MEMORY_UPDATE\n(.*?)```"
-    memory_match = re.search(memory_update_pattern, text, re.DOTALL)
+    # 2. MEMORY_UPDATE (Case Insensitive + Flexible Whitespace)
+    memory_update_pattern = r"```MEMORY_UPDATE\s*(.*?)```"
+    memory_match = re.search(memory_update_pattern, text, re.DOTALL | re.IGNORECASE)
     facts = None
     if memory_match:
+        print("🔍 Found MEMORY_UPDATE block.")
         facts = memory_match.group(1).strip()
-        text = re.sub(memory_update_pattern, "", text, flags=re.DOTALL).strip()
+        text = re.sub(memory_update_pattern, "", text, flags=re.DOTALL | re.IGNORECASE).strip()
         
-    # 3. VISUAL_PROMPT
-    visual_prompt_pattern = r"```VISUAL_PROMPT\n(.*?)```"
-    visual_match = re.search(visual_prompt_pattern, text, re.DOTALL)
+    # 3. VISUAL_PROMPT 
+    # Primary: Backticked block
+    visual_prompt_pattern = r"```VISUAL_PROMPT\s*(.*?)```"
+    visual_match = re.search(visual_prompt_pattern, text, re.DOTALL | re.IGNORECASE)
     visual_prompt = None
     if visual_match:
+        print("🔍 Found backticked VISUAL_PROMPT.")
         visual_prompt = visual_match.group(1).strip()
-        text = re.sub(visual_prompt_pattern, "", text, flags=re.DOTALL).strip()
+        text = re.sub(visual_prompt_pattern, "", text, flags=re.DOTALL | re.IGNORECASE).strip()
+    else:
+        # Fallback: Header + the Structure brackets (for when AI forgets backticks or uses bolding)
+        # We look for the keyword and then any sequence of [...] blocks
+        fallback_pattern = r"(?:\*+|#+)?\s*VISUAL_PROMPT\s*(?:\*+|#+)?(?::|-)?\s*((?:\[.*?\]\s*)+)"
+        fallback_match = re.search(fallback_pattern, text, re.DOTALL | re.IGNORECASE)
+        if fallback_match:
+            print("🔍 Found fallback VISUAL_PROMPT structure.")
+            visual_prompt = fallback_match.group(1).strip()
+            text = re.sub(fallback_pattern, "", text, flags=re.DOTALL | re.IGNORECASE).strip()
+
+    if not visual_prompt and "VISUAL_PROMPT" in text.upper():
+        print("⚠️ Found 'VISUAL_PROMPT' keyword but failed to parse the structure.")
 
     return text, facts, visual_prompt
 
