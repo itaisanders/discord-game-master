@@ -15,13 +15,6 @@ def api_key():
     return key
 
 @pytest.fixture
-def store_id():
-    sid = os.getenv("STORE_ID")
-    if not sid:
-        pytest.skip("STORE_ID not found in environment, skipping RAG tests.")
-    return sid
-
-@pytest.fixture
 def client(api_key):
     return genai.Client(api_key=api_key)
 
@@ -35,11 +28,3 @@ def test_gemini_client_connection(client):
         pass 
     except Exception as e:
         pytest.fail(f"Client initialization failed: {e}")
-
-def test_rag_store_access(client, store_id):
-    """Critical: Verify the configured File Search Store exists and is accessible."""
-    try:
-        store = client.file_search_stores.get(name=store_id)
-        assert store.name == store_id
-    except Exception as e:
-        pytest.fail(f"Could not access File Search Store '{store_id}': {e}")

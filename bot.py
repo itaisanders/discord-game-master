@@ -16,14 +16,13 @@ load_dotenv()
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-STORE_ID = os.getenv("STORE_ID")
 TARGET_CHANNEL_ID_STR = os.getenv("TARGET_CHANNEL_ID")
 PERSONA_FILE = os.getenv("PERSONA_FILE")
 AI_MODEL = os.getenv("AI_MODEL")
 
 # Basic validation
 def validate_config():
-    if not all([DISCORD_TOKEN, GEMINI_API_KEY, STORE_ID, TARGET_CHANNEL_ID_STR]):
+    if not all([DISCORD_TOKEN, GEMINI_API_KEY, TARGET_CHANNEL_ID_STR]):
         return False
     return True
 
@@ -262,7 +261,6 @@ def run_terminal_mode():
     """Runs the bot in an interactive terminal loop."""
     print(f"🎮 Terminal Mode: {AI_MODEL}")
     print(f"📖 Persona: {PERSONA_FILE}")
-    print(f"📚 RAG Store: {STORE_ID}")
     print("--------------------------------------------------")
     print("Type your message to interact. Type 'exit' to quit.")
     print("--------------------------------------------------")
@@ -311,12 +309,7 @@ def run_terminal_mode():
                 model=AI_MODEL,
                 config=types.GenerateContentConfig(
                     system_instruction=FULL_SYSTEM_INSTRUCTION,
-                    safety_settings=safety_settings,
-                    tools=[types.Tool(
-                        file_search=types.FileSearch(
-                            file_search_store_names=[STORE_ID]
-                        )
-                    )]
+                    safety_settings=safety_settings
                 ),
                 history=gemini_history
             )
@@ -478,12 +471,7 @@ async def on_message(message):
                         model=current_model,
                         config=types.GenerateContentConfig(
                             system_instruction=dynamic_system_instruction,
-                            safety_settings=safety_settings,
-                            tools=[types.Tool(
-                                file_search=types.FileSearch(
-                                    file_search_store_names=[STORE_ID]
-                                )
-                            )]
+                            safety_settings=safety_settings
                         ),
                         history=gemini_history
                     )

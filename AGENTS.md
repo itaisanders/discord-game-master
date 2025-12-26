@@ -13,7 +13,7 @@
 ### Core Purpose
 - Facilitate immersive, "Fiction-First" tabletop RPG sessions in Discord
 - Manage multiplayer party context across long-running campaigns
-- Provide intelligent rule lookups via RAG-indexed PDF sourcebooks
+- Provide intelligent rule lookups via full-context Markdown ingestion of sourcebooks
 - Generate atmospheric artwork using AI image generation
 - Maintain persistent campaign memory across bot restarts
 
@@ -23,7 +23,7 @@
 - **AI Provider**: Google Gemini API
   - `gemini-2.0-flash-lite` for text generation (GM narration)
   - `gemini-2.5-flash-image` for visual generation
-- **Knowledge Base**: RAG (Retrieval-Augmented Generation) with File Search
+- **Knowledge Base**: Context-Full (Direct Markdown ingestion into System Instruction)
 
 ---
 
@@ -230,10 +230,8 @@ python bot.py --terminal
 
 ##### Knowledge Base Updates
 ```bash
-# Index new PDFs
-python scripts/index_knowledge.py
-
-# High-fidelity ingestion (preserves layout)
+# High-fidelity transcription (PDF -> Markdown)
+# Bot loads all .md files from knowledge/ automatically on startup
 python scripts/ingest_rpg_book.py pdf/your_book.pdf
 ```
 
@@ -299,7 +297,7 @@ game-master/
 │   └── rpg_scribe_instructions.md
 ├── memory/                 # Persistent campaign state (.ledger files)
 ├── knowledge/              # Ingested sourcebooks (.md) and art styles (.style)
-├── pdf/                    # Source PDFs for RAG indexing
+├── pdf/                    # Source PDFs for transcription
 ├── scripts/                # Utility tools
 │   ├── index_knowledge.py
 │   ├── ingest_rpg_book.py
@@ -376,7 +374,7 @@ game-master/
 ## 8. Glossary
 
 - **GM**: Game Master (the AI bot's primary role)
-- **RAG**: Retrieval-Augmented Generation (PDF knowledge lookup)
+- **Context-Full**: Direct Markdown ingestion into System Instruction
 - **Ledger**: Persistent memory file (.ledger extension)
 - **Persona**: AI system instruction defining behavior
 - **Protocol Block**: Structured markdown block (e.g., DATA_TABLE, MEMORY_UPDATE)

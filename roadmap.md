@@ -48,7 +48,7 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - [ ] **Modular Provider (Alpha)**: Initial support for configurable model backends (Ollama/Custom).
 
 ### 🟡 Phase 2: expansion
-- [ ] **Context-Full Knowledge**: Replace RAG with direct Markdown context ingestion for rulebooks.
+- [x] **Context-Full Knowledge**: Replace RAG with direct Markdown context ingestion for rulebooks.
 - [ ] **Table State Machine**: Implement OOC vs IC state management to prevent meta-bleed.
 - [ ] **Vocal Summaries**: Audio/text session recaps since the last logout.
 - [ ] **Atmosphere 2.0**: Refined visual generation styles and ambient task suggestions.

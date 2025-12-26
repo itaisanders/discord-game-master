@@ -10,7 +10,7 @@ It features **Async-First Execution** for a non-blocking Discord experience, **R
 
 *   **Async-First Design**: Optimized for Discord; all AI computations run asynchronously to prevent connection drops.
 *   **Professional GM Persona**: Follows a strict "Play to Find Out" philosophy, managing spotlight, pacing, and mechanics.
-*   **Knowledge Base (RAG)**: Automatically indexes PDF rulebooks (e.g., *Spire*) to answer rule queries accurately.
+*   **Context-Full Knowledge**: Ingests high-fidelity Markdown rulebooks directly into the AI's system context for zero-hallucination accuracy.
 *   **Persistent Memory**: Manages multiple players via the **Master Ledger** system across sessions.
 *   **Multimedia Integration**: Generates atmospheric visuals via specialized image generation protocols.
 
@@ -46,22 +46,17 @@ pip install discord.py google-genai python-dotenv
 
 ---
 
-## 📚 Knowledge Base Indexing (RAG)
+## 📚 Knowledge Base Ingestion
 
-Before running the bot, you must index your game sourcebooks.
+To provide the bot with rulebook knowledge, you must transcribe your RPG sourcebooks into Markdown.
 
 1.  Place your `.pdf` rulebooks into the `pdf/` directory.
-2.  Run the indexer script:
-    ```bash
-    python scripts/index_knowledge.py
-    ```
-3.  This script will upload the PDFs to Google's GenAI File Store and automatically update your `.env` file with a new `STORE_ID`.
+2.  Use the **High-Fidelity RPG Ingestion** tool below to create Markdown versions in the `knowledge/` directory.
+3.  The bot automatically loads all `.md` files from `knowledge/` on startup.
 
 ---
 
-## 📜 High-Fidelity RPG Ingestion (Optional)
-
-For superior narrative accuracy, use the **RPG Scribe** tool to convert complex PDFs into verbatim Markdown. This is highly recommended for rules-heavy systems like *Spire* or *Blades in the Dark*.
+For superior narrative accuracy, use the **RPG Scribe** tool to convert complex PDFs into high-fidelity Markdown. This is highly recommended for rules-heavy systems like *Spire* or *Blades in the Dark*.
 
 ### 1. Requirements
 Ensure you have the AI layout extensions installed:
@@ -71,12 +66,10 @@ pip install -U "pymupdf4llm[ocr,layout]"
 
 ### 2. Run Ingestion
 ```bash
-python scripts/ingest_rpg_book.py pdf/your_book.pdf [--keep-temp]
+python scripts/ingest_rpg_book.py pdf/your_book.pdf
 ```
-*   **Visual Feedback**: The script uses a progress spinner and bar to show real-time status.
-*   **Logic**: It performs AI-driven layout analysis and transcribes the book in 5-page chunks to ensure zero-omission of spells, gear, or mechanical stats.
-*   **Optional Parameters**: Use `--keep-temp` to preserve the intermediate `_dump.md` and `_raw.txt` files in the `knowledge/` directory for manual review.
-*   **Output**: Saves a high-fidelity `.md` file to the `knowledge/` directory.
+*   **Logic**: It performs high-fidelity layout analysis using `pymupdf4llm` to preserve tables, lists, and mechanical stats.
+*   **Output**: Saves a `.md` file to the `knowledge/` directory which the bot loads automatically on startup.
 
 ---
 
@@ -96,7 +89,7 @@ Test the GM persona and logic directly in your console without sending messages 
 python bot.py --terminal
 ```
 *   You act as `User [@Terminal]`.
-*   Great for testing prompts, RAG retrieval, and persona consistency.
+*   Great for testing prompts, rules knowledge, and persona consistency.
 *   Type `exit` or `quit` to stop.
 
 ---
@@ -105,7 +98,7 @@ python bot.py --terminal
 
 *   `bot.py`: Main application logic (Discord client + Terminal loop).
 *   `scripts/index_knowledge.py`: Utility to scan `pdf/` and update the RAG store.
-*   `scripts/ingest_rpg_book.py`: High-fidelity RPG book transcription tool.
+*   `scripts/ingest_rpg_book.py`: Local high-fidelity RPG book transcription tool.
 *   `scripts/check_env.py`: Environment validation utility.
 *   `personas/gm_persona.md`: The "System Instructions" defining the GM's behavior and rules.
 *   `pdf/`: Directory for your game rulebooks.
