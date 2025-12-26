@@ -49,6 +49,7 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 
 ### 🟡 Phase 2: expansion
 - [x] **Context-Full Knowledge**: Replace RAG with direct Markdown context ingestion for rulebooks.
+- [ ] **Away Mode**: Allow players to mark themselves as absent for a session with configurable character handling (ignore character, play as NPC, or narrative excuse).
 - [ ] **Table State Machine**: Implement OOC vs IC state management to prevent meta-bleed.
 - [ ] **Vocal Summaries**: Audio/text session recaps since the last logout.
 - [ ] **Atmosphere 2.0**: Refined visual generation styles and ambient task suggestions.

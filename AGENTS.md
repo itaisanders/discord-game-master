@@ -349,10 +349,7 @@ game-master/
 2. Run existing tests to establish baseline (`pytest tests/`)
 3. Check `.env.example` for required configuration
 4. Review relevant persona files for behavioral context
-5. Suggest updates to this AGENTS.md if patterns need to be updated
-6. Update `tasks.md` with any new tasks
-7. Show the user the implementation plan
-8. Wait for user explicit approval to proceed with implementation
+5. Update `tasks.md` with any new tasks - first task is always "Suggest updates to `AGENTS.md` if patterns need to be updated in the scope of this specific objective"
 
 ### During Development
 1. Use async patterns for all Gemini API calls
