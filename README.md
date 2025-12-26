@@ -1,18 +1,18 @@
-# 🎲 Apex Game Master Bot
+# 🎲 Discord RPG Game Master Bot
 
-The **Apex Game Master** is an advanced Discord bot powered by Google's Gemini API (Gemini 2.0 Flash Lite). It is designed to act as an immersive, "Fiction-First" Game Master for multiplayer tabletop RPGs like *Spire*, *Blades in the Dark*, or *D&D*.
+The **Discord RPG Game Master Bot** is an advanced AI-powered Game Master for multiplayer, text-based tabletop RPGs. Powered by Google's Gemini API (Gemini 2.0 Flash Lite), it facilitates immersive, "Fiction-First" gameplay.
 
-It features **RAG (Retrieval-Augmented Generation)** to index game rules from PDF sourcebooks, **Conversational Memory** to track party context, and a persistent **Master Ledger** to manage multiple players.
+It features **Async-First Execution** for a non-blocking Discord experience, **RAG (Retrieval-Augmented Generation)** to index game rules from PDF sourcebooks, **Conversational Memory** to track party context, and a persistent **Master Ledger** system.
 
 ---
 
-## 🚀 Features
+## 🚀 Key Features
 
+*   **Async-First Design**: Optimized for Discord; all AI computations run asynchronously to prevent connection drops.
 *   **Professional GM Persona**: Follows a strict "Play to Find Out" philosophy, managing spotlight, pacing, and mechanics.
-*   **Knowledge Base**: Automatically indexes PDF rulebooks (e.g., *Spire*) to answer rule queries accurately.
-*   **Multiplayer Context**: Intelligently tracks different Discord users as distinct characters (e.g., `User [@Player1]`).
-*   **Dual Mode**: Run as a Discord Bot or test offline in **Terminal Mode**.
-*   **Safety Override**: Safety filters are set to `BLOCK_NONE` to allow for mature storytelling and combat descriptions required in TTRPGs.
+*   **Knowledge Base (RAG)**: Automatically indexes PDF rulebooks (e.g., *Spire*) to answer rule queries accurately.
+*   **Persistent Memory**: Manages multiple players via the **Master Ledger** system across sessions.
+*   **Multimedia Integration**: Generates atmospheric visuals via specialized image generation protocols.
 
 ---
 
@@ -110,6 +110,17 @@ python bot.py --terminal
 *   `personas/gm_persona.md`: The "System Instructions" defining the GM's behavior and rules.
 *   `pdf/`: Directory for your game rulebooks.
 *   `tests/`: Automated test suite (run via `pytest`).
+
+---
+
+## 🏛️ Strategic Documentation
+
+For deeper insight into the bot's operation and development:
+
+- **[AGENTS.md](./AGENTS.md)**: The **Architectural Source of Truth**. Contains logic patterns, domain constraints, and development protocols for AI agents.
+- **[roadmap.md](./roadmap.md)**: The **Project Vision**. Outlines the "North Star" and strategic "vibe-coding" pillars.
+
+---
 
 ## 🧪 Testing
 Run the automated test suite to verify environment integrity and API access:
