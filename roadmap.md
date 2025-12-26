@@ -43,7 +43,7 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - [x] Async-First Architecture (Stability)
 - [x] RAG Rule Ingestion (Initial Accuracy)
 - [x] Persistent .ledger Memory (State)
-- [ ] **True Randomness**: Move dice rolling from AI to Python code.
+- [x] **True Randomness**: Move dice rolling from AI to Python code.
 - [ ] **Output Polish**: Fix character limit and formatting faults in generated text.
 - [ ] **Modular Provider (Alpha)**: Initial support for configurable model backends (Ollama/Custom).
 

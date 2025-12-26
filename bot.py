@@ -10,6 +10,12 @@ from prettytable import PrettyTable
 import asyncio
 import time
 import pathlib
+import pathlib
+from typing import Optional
+from dice import roll
+
+# Global state for pending rolls
+pending_rolls = {}
 
 # 1. Setup & Configuration
 load_dotenv()
@@ -149,6 +155,91 @@ def save_ledger_files(response_text):
 # PARSING & FORMATTING UTILITIES 
 # -------------------------------------------------------------
 
+def process_dice_rolls(text):
+    """Intercepts DICE_ROLL protocol blocks and executes actual dice rolls."""
+    # Pattern: ```DICE_ROLL\n[Character Name] rolls [dice notation] for [reason]\n```
+    dice_pattern = r'```DICE_ROLL\s*(.+?)\s+rolls?\s+([^\s]+)(?:\s+for\s+(.+?))?\s*```'
+    
+    def replace_with_roll(match):
+        character_name = match.group(1).strip()
+        notation = match.group(2).strip()
+        reason = match.group(3).strip() if match.group(3) else "unknown reason"
+        
+        result = roll(notation)
+        
+        if result.error:
+            return f"❌ **{character_name}** attempted to roll {notation} but: {result.error}"
+        
+        return f"🎲 **{character_name}** rolls {notation} for {reason}: {result.formatted}"
+    
+    processed = re.sub(dice_pattern, replace_with_roll, text, flags=re.DOTALL | re.IGNORECASE)
+    
+    # Debug logging
+    if "DICE_ROLL" in text.upper() and processed != text:
+        print("🎲 Intercepted and executed DICE_ROLL block")
+    
+    return processed
+
+def process_roll_calls(text):
+    """
+    Intercepts ROLL_CALL protocol blocks and stores pending rolls.
+    
+    Format:
+    ```ROLL_CALL
+    @Username: 2d6+3 for Defy Danger
+    ```
+    """
+    global pending_rolls
+    
+    roll_call_pattern = r'```ROLL_CALL\s*(.*?)\s*```'
+    
+    def extract_and_store(match):
+        content = match.group(1).strip()
+        lines = content.split('\n')
+        
+        stored_calls = []
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Parse: @Username: 2d6+3 for Reason
+            # We allow optional @
+            call_pattern = r'@?(\w+):\s*([^\s]+)(?:\s+for\s+(.+))?'
+            call_match = re.match(call_pattern, line, re.IGNORECASE)
+            
+            if call_match:
+                username = call_match.group(1)
+                notation = call_match.group(2)
+                reason = call_match.group(3).strip() if call_match.group(3) else "unknown"
+                
+                # Store in pending_rolls keyed by username
+                pending_rolls[username] = {
+                    "notation": notation,
+                    "reason": reason,
+                    "timestamp": time.time()
+                }
+                
+                stored_calls.append({
+                    "username": username,
+                    "notation": notation,
+                    "reason": reason
+                })
+        
+        # Return a user-friendly message
+        if stored_calls:
+            messages = [f"📋 **{call['username']}**, roll {call['notation']} for {call['reason']}" 
+                       for call in stored_calls]
+            return "\n".join(messages)
+        return ""
+    
+    processed = re.sub(roll_call_pattern, extract_and_store, text, flags=re.DOTALL | re.IGNORECASE)
+    
+    if "ROLL_CALL" in text.upper() and processed != text:
+        print("📋 Intercepted ROLL_CALL block")
+    
+    return processed
+
 def render_table_as_ascii(match):
     """Processes a DATA_TABLE block into a PrettyTable ASCII string."""
     table_block = match.group(1)
@@ -223,6 +314,12 @@ def process_response_formatting(text):
 
     if not visual_prompt and "VISUAL_PROMPT" in text.upper():
         print("⚠️ Found 'VISUAL_PROMPT' keyword but failed to parse the structure.")
+    
+    # 4. DICE_ROLL - Intercept and execute actual dice rolls
+    text = process_dice_rolls(text)
+
+    # 5. ROLL_CALL - Intercept and queue pending rolls
+    text = process_roll_calls(text)
 
     return text, facts, visual_prompt
 
@@ -252,6 +349,45 @@ client_genai = genai.Client(api_key=GEMINI_API_KEY)
 intents = discord.Intents.default()
 intents.message_content = True 
 client_discord = discord.Client(intents=intents)
+
+# Discord Slash Commands Setup
+tree = discord.app_commands.CommandTree(client_discord)
+
+@tree.command(name="roll", description="Roll dice (e.g., 2d6+3) or execute pending roll")
+async def roll_command(interaction: discord.Interaction, dice: Optional[str] = None):
+    """Manual dice roll command for players."""
+    
+    # 1. Context-Aware Roll (No arguments)
+    if dice is None:
+        username = interaction.user.name
+        if username in pending_rolls:
+            pending = pending_rolls[username]
+            result = roll(pending["notation"])
+            
+            if result.error:
+                await interaction.response.send_message(f"❌ Invalid pending roll notation: {result.error}", ephemeral=True)
+            else:
+                # Clear pending roll
+                del pending_rolls[username]
+                await interaction.response.send_message(
+                    f"🎲 **{interaction.user.display_name}** rolls {pending['notation']} for {pending['reason']}: {result.formatted}"
+                )
+        else:
+            await interaction.response.send_message(
+                "❌ No pending roll found. Use `/roll [dice]` (e.g., `/roll 2d6+3`).", 
+                ephemeral=True
+            )
+        return
+
+    # 2. Explicit Roll
+    result = roll(dice)
+    
+    if result.error:
+        await interaction.response.send_message(f"❌ Invalid dice notation: {result.error}", ephemeral=True)
+    else:
+        await interaction.response.send_message(
+            f"🎲 **{interaction.user.display_name}** rolls {dice}: {result.formatted}"
+        )
 
 # -------------------------------------------------------------------------
 # TERMINAL MODE LOGIC
@@ -342,6 +478,13 @@ def run_terminal_mode():
 async def on_ready():
     print(f'✅ GM Bot logged in as {client_discord.user}')
     print(f'🎯 Authorized Channel: {TARGET_CHANNEL_ID}')
+    
+    # Sync slash commands
+    try:
+        await tree.sync()
+        print('✅ Slash commands synced')
+    except Exception as e:
+        print(f'⚠️ Failed to sync slash commands: {e}')
 
 @client_discord.event
 async def on_message(message):

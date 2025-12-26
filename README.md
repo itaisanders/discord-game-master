@@ -11,6 +11,7 @@ It features **Async-First Execution** for a non-blocking Discord experience, **R
 *   **Async-First Design**: Optimized for Discord; all AI computations run asynchronously to prevent connection drops.
 *   **Professional GM Persona**: Follows a strict "Play to Find Out" philosophy, managing spotlight, pacing, and mechanics.
 *   **Context-Full Knowledge**: Ingests high-fidelity Markdown rulebooks directly into the AI's system context for zero-hallucination accuracy.
+*   **True Randomness**: All dice rolls use Python's cryptographically secure `secrets` module - AI never simulates results.
 *   **Persistent Memory**: Manages multiple players via the **Master Ledger** system across sessions.
 *   **Multimedia Integration**: Generates atmospheric visuals via specialized image generation protocols.
 
@@ -81,7 +82,7 @@ Run the bot to start listening to your Discord channel:
 python bot.py
 ```
 *   **Interaction**: The bot only responds in the channel specified by `TARGET_CHANNEL_ID`.
-*   **Slash Commands**: Supports commands like `/roll`, `/sheet`, and `/visual` (parsed via natural language in this version).
+*   **Slash Commands**: Supports `/roll` for dice rolling. Other commands like `/sheet` and `/visual` are parsed via natural language.
 
 ### Terminal Mode (Testing)
 Test the GM persona and logic directly in your console without sending messages to Discord:
@@ -91,6 +92,47 @@ python bot.py --terminal
 *   You act as `User [@Terminal]`.
 *   Great for testing prompts, rules knowledge, and persona consistency.
 *   Type `exit` or `quit` to stop.
+
+---
+
+## 🎲 Dice Rolling System
+
+The bot implements **"Respect the Dice"** - all randomness comes from Python's `secrets` module, never from AI simulation.
+
+### Manual Rolls
+Players can roll dice manually using the `/roll` slash command:
+```
+/roll 2d6+3
+/roll 1d20
+/roll 4dF
+```
+
+### Supported Notation
+- **Basic**: `1d20`, `2d6`, `3d8` (roll N dice of size D)
+- **Modifiers**: `2d6+3`, `1d20-2` (add/subtract modifier)
+- **Percentile**: `1d100` or `d%` (roll 1-100)
+- **FATE Dice**: `4dF` (roll 4 FATE dice, each -1/0/+1)
+- **Dice Pool**: `5d6p` (roll N dice, list results, no sum)
+
+### AI-Requested Rolls
+When the GM needs a roll, it will request one via the `DICE_ROLL` protocol. The bot intercepts these requests and executes actual random rolls.
+
+**Example**:
+```
+GM: "Alistair, you'll need to Defy Danger. Roll 2d6+3."
+[Bot executes: 🎲 Alistair rolls 2d6+3 for Defy Danger: [4, 5] +3 = **12**]
+GM: "A 12! You leap across the chasm with grace..."
+```
+
+### Player Roll Requests
+The GM can also queue dice rolls for you. If the GM says "Roll 2d6+3", you can just type `/roll`:
+
+**Example**:
+```
+GM: 📋 **Alistair**, roll 2d6+3 for Defy Danger
+Player: /roll
+Bot: 🎲 **Alistair** rolls 2d6+3 for Defy Danger: [4, 5] +3 = **12**
+```
 
 ---
 

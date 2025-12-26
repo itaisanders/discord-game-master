@@ -95,3 +95,55 @@ def test_render_table_as_ascii_malformed():
     # It should return the original if it fails headers or just produce a table with no rows?
     # Our logic says 'if headers:' so if no pipes, it returns match.group(0)
     assert result == bad_table
+
+def test_process_response_formatting_dice_roll():
+    """Test that DICE_ROLL blocks are correctly intercepted and executed."""
+    sample_text = """
+The tension rises.
+```DICE_ROLL
+Alistair rolls 2d6+3 for Defy Danger
+```
+What happens next?
+"""
+    cleaned_text, facts, visual_prompt = process_response_formatting(sample_text)
+    
+    assert "The tension rises." in cleaned_text
+    assert "What happens next?" in cleaned_text
+    assert "🎲" in cleaned_text
+    assert "Alistair" in cleaned_text
+    assert "Defy Danger" in cleaned_text
+    assert "DICE_ROLL" not in cleaned_text
+    # Result should contain actual roll (we can't predict exact value, but should have brackets)
+    assert "[" in cleaned_text or "**" in cleaned_text  # Either list format or single die format
+
+def test_process_response_formatting_roll_call():
+    """Test that ROLL_CALL blocks are correctly intercepted and parsed."""
+    # Reset pending_rolls for test isolation
+    from bot import pending_rolls
+    pending_rolls.clear()
+    
+    sample_text = """
+The GM speaks.
+```ROLL_CALL
+@Alistair: 2d6+3 for Defy Danger
+@Kaelen: 1d20 for Stealth
+```
+Who acts first?
+"""
+    cleaned_text, facts, visual_prompt = process_response_formatting(sample_text)
+    
+    assert "The GM speaks." in cleaned_text
+    assert "Who acts first?" in cleaned_text
+    assert "ROLL_CALL" not in cleaned_text
+    
+    # Check for the formatted output info
+    assert "📋" in cleaned_text
+    assert "**Alistair**" in cleaned_text
+    assert "2d6+3" in cleaned_text
+    assert "Defy Danger" in cleaned_text
+    assert "**Kaelen**" in cleaned_text
+    
+    # Verify global state update
+    assert "Alistair" in pending_rolls
+    assert pending_rolls["Alistair"]["notation"] == "2d6+3"
+    assert "Kaelen" in pending_rolls

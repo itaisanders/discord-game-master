@@ -70,15 +70,101 @@ The bot uses **regex-based protocol blocks** for structured data:
 | ```VISUAL_PROMPT
 | [Subject: ...] [Setting: ...] [Lighting: ...] [Style: ...]
 | ```
+
+| ```DICE_ROLL
+| [Character Name] rolls [dice notation] for [reason]
+| ```
+
+| ```ROLL_CALL
+| @PlayerName: [dice notation] for [reason]
+| ```
 ```
 
 **Implementation**: `process_response_formatting()` in `bot.py` uses case-insensitive regex with fallback patterns.
+
+**DICE_ROLL Protocol**: The AI Game Master uses this block to request dice rolls from the Python dice system instead of simulating results. The bot extracts dice notation (e.g., `2d6+3`, `1d20`), calls `dice.py` to generate true random results, and replaces the block with formatted output before sending to Discord.
+
+**ROLL_CALL Protocol** (Future Enhancement): The AI uses this block to queue a roll request for a specific player. The player can then execute the roll by typing `/roll` without arguments. This creates a smoother gameplay flow where players don't need to manually type dice notation.
+
+**Example Flow**:
+```
+GM outputs: ```ROLL_CALL
+@Alistair: 2d6+3 for Defy Danger
+```
+Bot displays: 📋 **Alistair**, roll 2d6+3 for Defy Danger
+Player types: /roll
+Bot executes: 🎲 **Alistair** rolls 2d6+3 for Defy Danger: [4, 5] +3 = **12**
+```
 
 #### Persistent Memory System
 - **Storage**: File-based `.ledger` files in `memory/` directory
 - **Management**: Memory Architect persona processes `MEMORY_UPDATE` blocks
 - **Format**: Human-readable plain text with structured sections
 - **Ledgers**: `party.ledger`, `locations.ledger`, `npc.ledger`, `world_facts.ledger`, `active_clocks.ledger`, `inventory.ledger`
+
+#### Dice Integrity System
+- **Module**: `dice.py` - Standalone Python module for true random dice rolls
+- **Philosophy**: "Respect the Dice" - All randomness comes from Python's `secrets` module, never from AI
+- **Notation Support**: Standard TTRPG dice notation (e.g., `2d6+3`, `1d20`, `4d8-2`, `1d100`)
+- **Integration Points**:
+  1. **AI Interception**: `DICE_ROLL` protocol blocks in AI responses
+  2. **Manual Rolls**: `/roll` Discord command for player-initiated rolls
+  3. **Validation**: Malformed dice expressions return user-friendly error messages
+
+**Pattern**: The AI requests rolls via protocol blocks; the bot executes them with cryptographically secure randomness.
+
+### Dice System Architecture
+
+#### Module: `dice.py`
+
+**Core Function**: `roll(notation: str) -> DiceResult`
+
+**Supported Notation**:
+- Basic: `1d20`, `2d6`, `3d8`
+- With modifiers: `2d6+3`, `1d20-2`, `4d8+5`
+- Percentile: `1d100` or `d%`
+- Fudge/FATE: `4dF` (returns -1, 0, or +1 per die)
+
+**Return Structure**:
+```python
+@dataclass
+class DiceResult:
+    notation: str          # Original notation (e.g., "2d6+3")
+    rolls: List[int]       # Individual die results (e.g., [4, 5])
+    modifier: int          # Modifier applied (e.g., 3)
+    total: int            # Final sum (e.g., 12)
+    formatted: str        # Discord-ready string (e.g., "[4, 5] +3 = **12**")
+```
+
+**Error Handling**:
+- Invalid notation returns `DiceResult` with `error` field populated
+- Validation prevents: negative dice counts, dice > d1000, more than 100 dice per roll
+- Graceful degradation: malformed input returns helpful error message
+
+**Integration Pattern**:
+```python
+# In bot.py
+from dice import roll
+
+# Manual player roll
+@client_discord.tree.command(name="roll", description="Roll dice (e.g., 2d6+3)")
+async def roll_command(interaction, notation: str):
+    result = roll(notation)
+    await interaction.response.send_message(result.formatted)
+
+# AI roll interception
+def process_dice_rolls(text: str) -> str:
+    pattern = r'```DICE_ROLL\n(.+?)\n```'
+    matches = re.finditer(pattern, text, re.IGNORECASE | re.DOTALL)
+    for match in matches:
+        # Extract notation, call roll(), replace block
+        ...
+```
+
+**Testing Requirements**:
+- Unit tests for notation parsing (valid and invalid)
+- Statistical tests for randomness distribution (chi-square test)
+- Edge case validation (extreme values, malformed input)
 
 ### Framework & Library Stack
 
@@ -144,7 +230,7 @@ Discord does not support:
 
 #### Fiction-First Philosophy
 - **Never railroad**: React to player choices, don't predetermine outcomes
-- **Dice are random**: No fudging results
+- **Dice are random**: All rolls use Python's `secrets` module via `dice.py` - AI never simulates results
 - **Granular pacing**: One plot point at a time, ensure all players get spotlight
 
 #### Social Logic
@@ -209,6 +295,9 @@ python bot.py
 
 # Terminal test mode
 python bot.py --terminal
+
+# Test dice system in isolation
+python -c "from dice import roll; print(roll('2d6+3'))"
 ```
 
 ##### Testing
@@ -265,10 +354,11 @@ When creating walkthroughs or demonstrations for review within the Antigravity I
 - **Minimum**: all tests passing (current baseline)
 - **Categories**:
   - `test_basics.py` - Environment validation
-  - `test_bot_logic.py` - Protocol parsing (DATA_TABLE, MEMORY_UPDATE, VISUAL_PROMPT)
+  - `test_bot_logic.py` - Protocol parsing (DATA_TABLE, MEMORY_UPDATE, VISUAL_PROMPT, DICE_ROLL, ROLL_CALL)
   - `test_commands.py` - Discord command handlers (async)
   - `test_integration.py` - Gemini API connectivity
   - `test_memory_system.py` - Ledger persistence
+  - `test_dice.py` - Dice notation parsing and roll validation
 
 #### AsyncMock for Async Code
 ```python
@@ -290,6 +380,7 @@ with patch("bot.client_genai.aio.models.generate_content", new_callable=AsyncMoc
 ```
 game-master/
 ├── bot.py                  # Main application entry point
+├── dice.py                 # Dice rolling system (cryptographically secure)
 ├── personas/               # AI personality definitions
 │   ├── gm_persona.md
 │   ├── memory_architect_persona.md
@@ -309,7 +400,7 @@ game-master/
 ### Adding New Features
 
 #### Protocol Block Pattern
-1. Define format in `gm_persona.md`
+1. Define format in `gm_persona.md` (e.g., DICE_ROLL or ROLL_CALL for requesting rolls)
 2. Add regex parser to `process_response_formatting()`
 3. Implement handler in `on_message` event
 4. Add unit tests in `test_bot_logic.py`
@@ -374,7 +465,11 @@ game-master/
 - **Context-Full**: Direct Markdown ingestion into System Instruction
 - **Ledger**: Persistent memory file (.ledger extension)
 - **Persona**: AI system instruction defining behavior
-- **Protocol Block**: Structured markdown block (e.g., DATA_TABLE, MEMORY_UPDATE)
+- **Protocol Block**: Structured markdown block (e.g., DATA_TABLE, MEMORY_UPDATE, DICE_ROLL, ROLL_CALL)
+- **DICE_ROLL**: Protocol block for AI to request true random dice rolls
+- **ROLL_CALL**: Protocol block for AI to queue a roll request for a specific player
+- **Dice Notation**: Standard TTRPG format (e.g., `2d6+3` = sum) or Pool format (e.g., `5d6p` = list results)
+- **Respect the Dice**: Core principle that randomness must be genuine, never simulated
 - **TTRPG**: Tabletop Role-Playing Game
 - **Fiction-First**: Narrative-driven gameplay philosophy
 - **Nano Banana**: Internal nickname for Gemini 2.5 Flash Image model
