@@ -44,6 +44,7 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - [x] RAG Rule Ingestion (Initial Accuracy)
 - [x] Persistent .ledger Memory (State)
 - [x] **True Randomness**: Move dice rolling from AI to Python code.
+- [ ] **Native Slash Commands**: Implement all user available commands as slash commands.
 - [ ] **Output Polish**: Fix character limit and formatting faults in generated text.
 - [ ] **Modular Provider (Alpha)**: Initial support for configurable model backends (Ollama/Custom).
 
