@@ -134,6 +134,28 @@ Player: /roll
 Bot: 🎲 **Alistair** rolls 2d6+3 for Defy Danger: [4, 5] +3 = **12**
 ```
 
+Bot: 🎲 **Alistair** rolls 2d6+3 for Defy Danger: [4, 5] +3 = **12**
+```
+
+---
+
+## 💤 Away Mode System
+
+When real life calls, players can mark themselves as Away without pausing the game for everyone else.
+
+### Commands
+*   `/away [mode]`: Set your status.
+    *   **Auto-Pilot**: The GM takes over your character (roleplays + rolls).
+    *   **Off-Screen**: Your character is present but passive/silent.
+    *   **Narrative Exit**: Your character leaves the scene entirely.
+*   `/back`: Return to the game.
+    *   Generates a personalized **Catch-Up Summary** of what you missed.
+    *   Announces your return to the party.
+
+### Features
+*   **Mention Supression**: The GM will not mention/ping you while you are away.
+*   **Context Awareness**: The AI knows who is away and adjusts the narrative spotlight accordingly.
+
 ---
 
 ## 🧩 Project Structure

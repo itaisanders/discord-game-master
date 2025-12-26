@@ -113,6 +113,30 @@ Bot executes: 🎲 **Alistair** rolls 2d6+3 for Defy Danger: [4, 5] +3 = **12**
 
 **Pattern**: The AI requests rolls via protocol blocks; the bot executes them with cryptographically secure randomness.
 
+### Away Mode System
+- **Module**: `away.py` - State manager for player availability
+- **Storage**: `memory/away_status.json` (JSON persistence)
+- **Philosophy**: "Seamless Absence" - The game continues without friction, and returning players are reintegrated smoothly.
+- **Data Schema**:
+  ```json
+  {
+      "user_id": {
+          "mode": "str", // "Auto-Pilot", "Off-Screen", "Narrative Exit"
+          "last_seen_message_id": "int",
+          "timestamp": "float"
+      }
+  }
+  ```
+- **Architectural Patterns**:
+  1. **Mention Suppression (Dual-Layer)**:
+     - **Layer 1 (Prompt)**: Dynamic system instruction explicitly lists users to avoid tagging.
+     - **Layer 2 (Filter)**: Output processing regex strips `<@ID>` for away users if the AI hallucinates a tag.
+  2. **Just-in-Time Catch-Up**:
+     - When a player returns (`/back`), the bot fetches history *after* their `last_seen_message_id`.
+     - A targeted "Catch-Up Summary" is generated and sent ephemerally.
+  3. **Context Injection**:
+     - The "Away Status Block" is injected into the system prompt, defining exactly how the GM should roleplay (or ignore) specific absent characters.
+
 ### Dice System Architecture
 
 #### Module: `dice.py`
@@ -381,6 +405,7 @@ with patch("bot.client_genai.aio.models.generate_content", new_callable=AsyncMoc
 game-master/
 ├── bot.py                  # Main application entry point
 ├── dice.py                 # Dice rolling system (cryptographically secure)
+├── away.py                 # Player absence management system
 ├── personas/               # AI personality definitions
 │   ├── gm_persona.md
 │   ├── memory_architect_persona.md

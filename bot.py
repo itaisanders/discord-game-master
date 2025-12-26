@@ -13,9 +13,11 @@ import pathlib
 import pathlib
 from typing import Optional
 from dice import roll
+from away import AwayManager
 
 # Global state for pending rolls
 pending_rolls = {}
+away_manager = AwayManager()
 
 # 1. Setup & Configuration
 load_dotenv()
@@ -180,6 +182,28 @@ def process_dice_rolls(text):
     
     return processed
 
+def filter_away_mentions(text):
+    """
+    Removes mentions (<@ID>) for users who are currently Away.
+    This acts as a safety net if the AI hallucinates a tag despite instructions.
+    """
+    away_users = away_manager.get_all_away_users()
+    if not away_users:
+        return text
+
+    processed = text
+    for user_id in away_users:
+        # Check for standard mention format <@123456>
+        mention_pattern = rf"<@!?{user_id}>"
+        if re.search(mention_pattern, processed):
+            print(f"🛡️ Suppressed mention for away user {user_id}")
+            # Replace with a generic name reference or just strip it.
+            # Stripping it might break grammar, but preventing the ping is priority.
+            # We'll replace it with their display name if possible, or just "the character".
+            processed = re.sub(mention_pattern, "**(Away)**", processed)
+            
+    return processed
+
 def process_roll_calls(text):
     """
     Intercepts ROLL_CALL protocol blocks and stores pending rolls.
@@ -278,6 +302,10 @@ def render_table_as_ascii(match):
 
 def process_response_formatting(text):
     """Handles all regex-based replacements and extractions (DATA_TABLE, MEMORY_UPDATE, VISUAL_PROMPT)."""
+    
+    # 0. Safety Net: Filter Away Mentions
+    text = filter_away_mentions(text)
+
     # 1. DATA_TABLE (Case Insensitive + Flexible Whitespace)
     data_table_pattern = r"```DATA_TABLE\s*(.*?)```"
     if re.search(data_table_pattern, text, re.DOTALL | re.IGNORECASE):
@@ -389,9 +417,110 @@ async def roll_command(interaction: discord.Interaction, dice: Optional[str] = N
             f"🎲 **{interaction.user.display_name}** rolls {dice}: {result.formatted}"
         )
 
-# -------------------------------------------------------------------------
-# TERMINAL MODE LOGIC
-# -------------------------------------------------------------------------
+@tree.command(name="away", description="Mark yourself as away with a specific mode.")
+@discord.app_commands.choices(mode=[
+    discord.app_commands.Choice(name="Auto-Pilot (GM plays character)", value="auto-pilot"),
+    discord.app_commands.Choice(name="Off-Screen (Passive background)", value="off-screen"),
+    discord.app_commands.Choice(name="Narrative Exit (Character leaves locally)", value="narrative-exit")
+])
+async def away_command(interaction: discord.Interaction, mode: discord.app_commands.Choice[str]):
+    """Sets the player's status to Away."""
+    user_id = str(interaction.user.id)
+    # Use the ID of the interaction's message context, or if None, use 0 (though interactions usually have context)
+    # We actually want the ID of the last message in the channel effectively. 
+    # But since slash commands are ephemeral or separate, getting the exact "last seen" is tricky.
+    # We will use the Interaction ID as a proxy or fetch the channel's last message.
+    
+    last_msg_id = 0
+    if interaction.channel and hasattr(interaction.channel, "last_message_id"):
+        last_msg_id = interaction.channel.last_message_id
+    
+    # If last_message_id is None (rare temp channel), use 0
+    if not last_msg_id:
+        last_msg_id = 0
+
+    success = away_manager.set_away(user_id, mode.value, last_msg_id)
+    
+    if success:
+        await interaction.response.send_message(
+            f"💤 **{interaction.user.display_name}** is now Away (Mode: `{mode.value}`).\n"
+            f"Mentions will be suppressed. Use `/back` to return and get a summary.",
+            ephemeral=False 
+        )
+    else:
+        await interaction.response.send_message("❌ Failed to set away status.", ephemeral=True)
+
+@tree.command(name="back", description="Return from away status and get a catch-up summary.")
+async def back_command(interaction: discord.Interaction):
+    """Returns the player to active status and provides a summary."""
+    user_id = str(interaction.user.id)
+    
+    if not away_manager.is_away(user_id):
+        await interaction.response.send_message("You are not currently marked as Away.", ephemeral=True)
+        return
+
+    away_data = away_manager.return_user(user_id)
+    last_seen_id = away_data.get("last_seen_message_id", 0)
+    
+    await interaction.response.defer(ephemeral=True)
+    
+    # 1. Fetch missed messages
+    summary_text = "*No significant events detected.*"
+    
+    try:
+        missed_messages = []
+        if interaction.channel:
+            # We need to find the message object to use 'after'
+            # If the specific ID is too old or not found, we might need a fallback.
+            # discord.py's history 'after' handles an Object with an id.
+            limit = 100 # Reasonable limit for summary
+            
+            # Since fetching by ID directly isn't easy without a message object, 
+            # we create a dummy object.
+            last_msg_obj = discord.Object(id=last_seen_id)
+            
+            async for msg in interaction.channel.history(limit=limit, after=last_msg_obj):
+                if msg.author == client_discord.user and "MEMORY_UPDATE" in msg.content:
+                    # Prioritize Memory updates for summary
+                    missed_messages.append(f"GM Update: {msg.content}")
+                elif msg.author != client_discord.user:
+                     missed_messages.append(f"{msg.author.display_name}: {msg.content}")
+        
+        if missed_messages:
+            history_block = "\n".join(missed_messages[-50:]) # Send last 50 prompts
+            
+            # 2. Generate Summary using AI
+            # We use a quick prompt to the model
+            prompt = f"""
+            # TASK: Catch-Up Summary
+            A player ({interaction.user.display_name}) has returned after being away.
+            Summarize the following recent events for them in 3-4 bullet points. Focus on what their character needs to know.
+            
+            # RECENT SCENE LOG:
+            {history_block}
+            """
+            
+            response = await client_genai.aio.models.generate_content(
+                model=AI_MODEL,
+                contents=prompt
+            )
+            
+            if response.text:
+                summary_text = response.text
+                
+    except Exception as e:
+        print(f"❌ Error generating back summary: {e}")
+        summary_text = f"*(System Error generating summary: {e})*"
+
+    await interaction.followup.send(
+        f"👋 Welcome back, **{interaction.user.display_name}**!\n\n**📝 Catch-Up Summary:**\n{summary_text}",
+        ephemeral=True
+    )
+    
+    # Announce publicly (optional, sticking to spec: "gm should provide them... narrative summary")
+    # The spec implies the summary is for the player.
+    # We also want to announce they are back to the group.
+    await interaction.channel.send(f"🟢 **{interaction.user.display_name}** has returned.")
 
 def run_terminal_mode():
     """Runs the bot in an interactive terminal loop."""
@@ -607,7 +736,19 @@ async def on_message(message):
                 try:
                     # Inject Persistent Memory into System Context
                     memory_context = load_memory()
-                    dynamic_system_instruction = f"{FULL_SYSTEM_INSTRUCTION}\n\n# CAMPAIGN PERSISTENT MEMORY\n{memory_context}"
+                    
+                    # Inject Away Status
+                    away_users = away_manager.get_all_away_users()
+                    away_block = ""
+                    if away_users:
+                        away_block = "\n# AWAY MODE STATUS (DO NOT TAG THESE USERS)\n"
+                        for uid, data in away_users.items():
+                            uname = f"<@{uid}>" # We don't have the username easily here without fetching, using ID
+                            # Ideally we map ID to name, but for now ID is safer for suppression instructions
+                            away_block += f"- User {uname} is AWAY. Mode: {data['mode']}.\n"
+                        away_block += "INSTRUCTION: Respect the mode. If 'Auto-Pilot', you play them. If 'Narrative Exit', they are gone. NEVER mention/tag away users directly.\n"
+
+                    dynamic_system_instruction = f"{FULL_SYSTEM_INSTRUCTION}\n\n# CAMPAIGN PERSISTENT MEMORY\n{memory_context}\n{away_block}"
 
                     # Async RAG Chat
                     chat = client_genai.aio.chats.create(
