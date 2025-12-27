@@ -134,9 +134,6 @@ Player: /roll
 Bot: 🎲 **Alistair** rolls 2d6+3 for Defy Danger: [4, 5] +3 = **12**
 ```
 
-Bot: 🎲 **Alistair** rolls 2d6+3 for Defy Danger: [4, 5] +3 = **12**
-```
-
 ---
 
 ## 💤 Away Mode System
