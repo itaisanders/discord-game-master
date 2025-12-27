@@ -60,7 +60,7 @@ For slash commands that require multi-step user interaction (e.g., `/rewind` awa
 #### Player Identity Mapping
 The bot maintains a persistent mapping between Discord User IDs (`<@ID>` or `@username`) and in-game Character Names. This mapping is critical for commands like `/sheet` to correctly identify which character a player is referring to.
 
-**Mechanism**: The **`party.ledger`** file is the single source of truth for this mapping. The `get_character_name` function in `bot.py` parses this ledger's Markdown table, correlating the `User` column with the `Name` column to find the correct character. This avoids data duplication and centralizes party information.
+**Mechanism**: The **`party.ledger`** is the single source of truth for mapping. The `get_character_name` function parses this file to link a Discord user to their character. To retrieve a sheet, the `fetch_character_sheet` function directly parses the `party.ledger` for character-specific data blocks. This provides a fast and deterministic way to retrieve character information.
 
 #### Multi-Persona Architecture
 The bot uses **specialized AI personas** for different tasks:
@@ -95,6 +95,10 @@ The bot uses **regex-based protocol blocks** for structured data:
 
 | ```ROLL_CALL
 | @PlayerName: [dice notation] for [reason]
+| ```
+
+| ```character_sheet[char_name=CHARACTER_NAME]
+| ... all character data (table, abilities, notes) ...
 | ```
 ```
 

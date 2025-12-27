@@ -218,27 +218,27 @@ def save_ledger_files(response_text):
     return count
 
 
-def fetch_character_sheet(character_name: str) -> Optional[str]:
+async def fetch_character_sheet(character_name: str) -> Optional[str]:
     """
-    Loads all .ledger files and searches for a DATA_TABLE block
-    representing a character sheet for the given character name.
-    Returns the full DATA_TABLE block as a string if found.
+    Retrieves a character's sheet from party.ledger by parsing for the character_sheet block.
     """
-    memory_dir = pathlib.Path("./memory")
-    if not memory_dir.exists():
+    party_ledger_path = pathlib.Path("./memory/party.ledger")
+    if not party_ledger_path.exists():
         return None
 
-    all_ledger_content = load_memory()
-    
-    data_table_pattern = r"```DATA_TABLE\s*(.*?)"
-    all_tables = re.findall(data_table_pattern, all_ledger_content, re.DOTALL | re.IGNORECASE)
-    
-    for table_content in all_tables:
-        title_pattern = r"Title:\s*(?:Character\s+Sheet:\s*)?(" + re.escape(character_name) + r")\s*"
-        if re.search(title_pattern, table_content, re.IGNORECASE):
-            return f"```DATA_TABLE\n{table_content}```"
-            
-    return None
+    all_ledger_content = party_ledger_path.read_text(encoding="utf-8")
+
+    # Regex to find the specific character_sheet block
+    # It looks for ```character_sheet[char_name=CHARACTER_NAME]...```
+    # re.escape is used for character_name to handle special characters correctly
+    pattern = r"```character_sheet\[char_name=" + re.escape(character_name) + r"\].*?\n(.*?)```"
+    match = re.search(pattern, all_ledger_content, re.DOTALL)
+
+    if match:
+        # Return the content inside the block
+        return match.group(1).strip()
+    else:
+        return None
 
 # -------------------------------------------------------------
 # PARSING & FORMATTING UTILITIES 
@@ -632,28 +632,29 @@ async def help_command(interaction: discord.Interaction):
 @tree.command(name="sheet", description="View your character sheet or another player's.")
 async def sheet_command(interaction: discord.Interaction, user: Optional[discord.User] = None):
     """Displays a character sheet."""
+    await interaction.response.defer(ephemeral=True)
     target_user = user if user else interaction.user
     
     character_name = get_character_name(str(target_user.id), target_user.name)
     
     if not character_name:
-        await interaction.response.send_message("Could not determine character name.", ephemeral=True)
+        await interaction.followup.send("Could not determine your character's name from the ledger.", ephemeral=True)
         return
 
-    sheet_data_block = fetch_character_sheet(character_name)
+    sheet_data_block = await fetch_character_sheet(character_name)
     
     if not sheet_data_block:
-        await interaction.response.send_message(f"Could not find a character sheet for **{character_name}**.", ephemeral=True)
+        await interaction.followup.send(f"Could not find a character sheet for **{character_name}**.", ephemeral=True)
         return
 
-    data_table_pattern = r"```DATA_TABLE\s*(.*?)"
-    match = re.search(data_table_pattern, sheet_data_block, re.DOTALL | re.IGNORECASE)
-    
-    if match:
-        formatted_sheet = render_table_as_ascii(match)
-        await interaction.response.send_message(formatted_sheet)
+    # Send the raw sheet data block, as it's already formatted by the Memory Architect
+    # Handle Discord message length limits
+    if len(sheet_data_block) > 1990: # Slightly less than 2000 to be safe
+        await interaction.channel.send(f"```markdown\n{sheet_data_block[:1990]}...\n```")
+        await interaction.followup.send("Character sheet too long, truncated. Use /ledger for full details.", ephemeral=True)
     else:
-        await interaction.response.send_message(f"Found sheet data for **{character_name}**, but failed to format it.")
+        await interaction.channel.send(f"```markdown\n{sheet_data_block}\n```")
+    await interaction.edit_original_response(content=f"Character sheet for **{character_name}** sent!")
 
 @tree.command(name="ledger", description="Display the master campaign ledger.")
 async def ledger_command(interaction: discord.Interaction):

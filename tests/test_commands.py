@@ -72,27 +72,33 @@ async def test_sheet_command_not_found(mock_interaction):
         
         await sheet_command.callback(mock_interaction)
         
-        mock_interaction.response.send_message.assert_called_once_with(
+        mock_interaction.followup.send.assert_called_once_with(
             "Could not find a character sheet for **TestCharacter**.", ephemeral=True
         )
 
 @pytest.mark.asyncio
 async def test_sheet_command_found(mock_interaction):
     """Test /sheet command when a sheet is found."""
-    sheet_block = "```DATA_TABLE\nTitle: TestCharacter\nStat | Value\nHP | 10\n```"
-    formatted_sheet = """**TestCharacter**
-```text
-+-------+-------+
-| Stat  | Value |
-+-------+-------+
-| HP    | 10    |
-+-------+-------+
-```"""
+    # This is the raw markdown content that fetch_character_sheet will now return
+    sheet_content = """
+| Name | User | Class |
+|:---|:---|:---|
+| **TestCharacter** | @TestUser | Fighter |
+
+**Abilities:**
+- Power Attack
+    """.strip()
+
+    # The command will wrap this content in a markdown block
+    expected_message = f"```markdown\n{sheet_content}\n```"
 
     with patch("bot.get_character_name", return_value="TestCharacter"), \
-         patch("bot.fetch_character_sheet", return_value=sheet_block), \
-         patch("bot.render_table_as_ascii", return_value=formatted_sheet):
+         patch("bot.fetch_character_sheet", return_value=sheet_content):
 
         await sheet_command.callback(mock_interaction)
         
-        mock_interaction.response.send_message.assert_called_once_with(formatted_sheet)
+        # Verify the followup message indicates success
+        mock_interaction.edit_original_response.assert_called_once_with(content="Character sheet for **TestCharacter** sent!")
+
+        # Verify the public message contains the correct sheet content
+        mock_interaction.channel.send.assert_called_once_with(expected_message)

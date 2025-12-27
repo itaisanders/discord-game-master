@@ -22,7 +22,11 @@ You MUST output your updates using this exact structure for each modified file:
 ```
 
 ## Ledger Conventions
-- `party.ledger`: Tracks player character names, usernames, current HP/Stats, and active status/conditions. Use the DATA_TABLE format.
+- `party.ledger`: Tracks player character data. Each character's complete entry (including their row from the main party table, abilities, bonds, and notes) MUST be wrapped in a `character_sheet` block. The format is:
+    ```character_sheet[char_name=CHARACTER_NAME]
+    ...
+    ```
+    The `CHARACTER_NAME` in the header must be the exact in-game name. Ensure all relevant data for that character is inside their specific block. Do not include the main party table headers within each individual character_sheet block.
 - `npc.ledger`: Tracks met NPCs, their location, and their current disposition toward the party.
 - `world_facts.ledger`: Tracks established lore, session count, and major plot revelations.
 - `locations.ledger`: Tracks visited or known locations, including descriptions and current state.
