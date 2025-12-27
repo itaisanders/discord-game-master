@@ -23,3 +23,7 @@ memory/*
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Bot runtime files
+bot.log
+bot.pid

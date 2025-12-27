@@ -83,20 +83,51 @@ python scripts/ingest_rpg_book.py pdf/your_book.pdf
 
 ---
 
+## ▶️ Running the Bot
+
+For persistent remote operation, use the provided management script.
+
+### Bot Management (`manage.sh`)
+This script allows you to run the bot as a persistent background process.
+
+*   **Start the bot:**
+    ```bash
+    ./manage.sh start
+    ```
+*   **Stop the bot:**
+    ```bash
+    ./manage.sh stop
+    ```
+*   **Restart the bot:**
+    ```bash
+    ./manage.sh restart
+    ```
+*   **Check the status:**
+    ```bash
+    ./manage.sh status
+    ```
+*   **View recent logs:**
+    ```bash
+    ./manage.sh log
+    ```
+
 ## 🎮 How to Run
 
-### Discord Mode (Live)
+### Manual Foreground Mode
+For local testing, you can run the bot directly. Note that closing the terminal will stop the bot.
+
+#### Discord Mode (Live)
 Run the bot to start listening to your Discord channel:
 ```bash
-python bot.py
+python3 bot.py
 ```
 *   **Interaction**: The bot only responds in the channel specified by `TARGET_CHANNEL_ID`.
 *   **Commands**: All player interactions are now handled exclusively via native Discord Slash Commands (e.g., `/roll`, `/sheet`, `/help`).
 
-### Terminal Mode (Testing)
+#### Terminal Mode (Testing)
 Test the GM persona and logic directly in your console without sending messages to Discord:
 ```bash
-python bot.py --terminal
+python3 bot.py --terminal
 ```
 *   You act as `User [@Terminal]`.
 *   Great for testing prompts, rules knowledge, and persona consistency.
@@ -167,6 +198,7 @@ When real life calls, players can mark themselves as Away without pausing the ga
 ## 🧩 Project Structure
 
 *   `bot.py`: Main application logic (Discord client + Terminal loop).
+*   `manage.sh`: Management script for starting/stopping the bot as a background process.
 *   `scripts/index_knowledge.py`: Utility to scan `pdf/` and update the RAG store.
 *   `scripts/ingest_rpg_book.py`: Local high-fidelity RPG book transcription tool.
 *   `scripts/check_env.py`: Environment validation utility.
