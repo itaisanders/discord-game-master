@@ -31,6 +31,9 @@
 
 ### Architectural Decisions
 
+#### Slash Command Architecture
+The bot's primary user interface is built on **native Discord Slash Commands**. This replaces legacy text-based command parsing (`/command`) for all player-facing actions (`/roll`, `/sheet`, `/help`, etc.). This approach provides a better user experience through auto-completion, clear argument structures, and explicit command discovery. The `on_message` handler in `bot.py` is now reserved for processing in-character narrative text and not command logic.
+
 #### Async-First Design
 **All Gemini API calls MUST use `client_genai.aio`** to prevent blocking the Discord event loop:
 ```python
@@ -43,6 +46,21 @@ response = client_genai.models.generate_content(...)
 ```
 
 **Rationale**: Synchronous calls caused "heartbeat blocked for more than 10 seconds" warnings, leading to connection drops.
+
+#### System Event Injection
+A core pattern for slash commands that need to influence the narrative is **System Event Injection**. Instead of the command's code directly performing a complex action, it injects a formatted, high-priority message into the AI's context for the next turn. This allows the AI narrator to process the request with full narrative awareness.
+
+**Example**: `/visual "a mysterious door"` injects `[System Event: Player @PlayerName has requested a visual of "a mysterious door"...]`. The AI then generates the detailed `VISUAL_PROMPT` block itself. This pattern is used for `/visual`, `/rewind`, `/ooc`, and `/x`.
+
+#### Command State Management
+For slash commands that require multi-step user interaction (e.g., `/rewind` awaiting a `new_direction`), the bot employs temporary state management. When such a command is initiated, the bot enters an "awaiting input" state for the specific user.
+
+**Behavior**: During this state, other game-related commands from the same user or conflicting commands from other users may be temporarily ignored, or the bot may issue a message prompting completion of the current interaction, to prevent logical conflicts and maintain coherent command processing.
+
+#### Player Identity Mapping
+The bot maintains a persistent mapping between Discord User IDs (`<@ID>`) and in-game Character Names. This mapping is critical for commands like `/sheet` to correctly identify which character a player is referring to, whether themselves or another player.
+
+**Mechanism**: A dedicated storage (e.g., `memory/player_map.json` or a specific `.ledger` file) will store these associations. This ensures that character-specific commands operate on the correct in-game entity.
 
 #### Multi-Persona Architecture
 The bot uses **specialized AI personas** for different tasks:
@@ -101,6 +119,7 @@ Bot executes: 🎲 **Alistair** rolls 2d6+3 for Defy Danger: [4, 5] +3 = **12**
 - **Management**: Memory Architect persona processes `MEMORY_UPDATE` blocks
 - **Format**: Human-readable plain text with structured sections
 - **Ledgers**: `party.ledger`, `locations.ledger`, `npc.ledger`, `world_facts.ledger`, `active_clocks.ledger`, `inventory.ledger`
+- **Memory Reversal**: For commands like `/rewind` and `/x` that alter past narrative, explicit instructions are sent to the Memory Architect persona. These instructions either invalidate or counteract previous `MEMORY_UPDATE` facts, ensuring the `.ledger` files accurately reflect the revised game state.
 
 #### Dice Integrity System
 - **Module**: `dice.py` - Standalone Python module for true random dice rolls
@@ -257,11 +276,16 @@ Discord does not support:
 - **Dice are random**: All rolls use Python's `secrets` module via `dice.py` - AI never simulates results
 - **Granular pacing**: One plot point at a time, ensure all players get spotlight
 
+#### Safety Tools
+The architecture includes formal safety tools to ensure player comfort. The primary tool is the `/x` command (X-Card), which allows any player to discreetly pivot the narrative away from uncomfortable content. This command triggers both a narrative shift and a memory reversal to ensure the problematic content is fully retconned from the game state.
+
 #### Social Logic
 The AI must detect when to remain silent (`[SIGNAL: SILENCE]`):
 - Players roleplaying amongst themselves (no GM input requested)
 - Awaiting responses from all party members
 - Discussion not addressing NPCs or game mechanics
+
+**OOC Context Management**: Out-of-character (`/ooc`) messages are formatted with an `[OOC]` tag and included in the AI's message history. The `gm_persona.md` explicitly instructs the AI to *not* treat these as in-character actions but to use them to understand player intent, strategy, or meta-discussion without narratively responding to them as if they were in-game events.
 
 #### Memory Update Protocol
 **MANDATORY** after any state-changing event:
@@ -272,12 +296,12 @@ The AI must detect when to remain silent (`[SIGNAL: SILENCE]`):
 | ```
 ```
 
-### Visual Generation Constraints
-
-#### Art Style Consistency
-- **Styleguide Injection**: Append `.style` files from `knowledge/` to all `VISUAL_PROMPT` requests
-- **Safe-Dark Guidelines**: Use artistic euphemisms (e.g., "crimson ichor" not "blood") to avoid safety filters
-- **Format**: Always use bracketed structure `[Subject:...] [Setting:...] [Lighting:...] [Style:...]`
+#### Visual Generation Constraints
+- **AI as Creative Director**: Player-initiated `/visual` commands do not directly call the image model. Instead, they trigger the AI (via a system event injected into context) to generate a `VISUAL_PROMPT` block, enriching it with current narrative context and established art style. This ensures stylistic consistency and narrative relevance.
+- **Art Style Consistency**: Append `.style` files from `knowledge/` to all `VISUAL_PROMPT` requests.
+- **Safe-Dark Guidelines**: Use artistic euphemisms (e.g., "crimson ichor" not "blood") to avoid safety filters.
+- **Format**: Always use bracketed structure `[Subject:...] [Setting:...] [Lighting:...] [Style:...]`.
+- **Narrative Synchronization**: After an image is generated (or fails), a system event message is injected into the AI's context to inform it about the visual content, ensuring the narrative remains synchronized with the generated imagery.
 
 #### Image Generation Model
 - **Primary**: `gemini-2.5-flash-image` (Nano Banana)
@@ -450,7 +474,7 @@ game-master/
 ### Memory System Limitations
 - **No Transactions**: Ledger updates are non-atomic (file writes)
 - **No Validation**: Ledger content is free-form text (trust AI to format correctly)
-- **Manual Reset**: `/reset_memory` requires 2-minute confirmation timeout
+- **Secure Reset**: The `/reset_memory` function is implemented as an admin-only slash command. This prevents accidental or unauthorized use and requires explicit confirmation through Discord's UI components.
 
 ### Image Generation Safety
 - **Block Rate**: ~10-15% of prompts blocked by safety filters

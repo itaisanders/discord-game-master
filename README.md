@@ -1,6 +1,6 @@
 # 🎲 Discord RPG Game Master Bot
 
-The **Discord RPG Game Master Bot** is an advanced AI-powered Game Master for multiplayer, text-based tabletop RPGs. Powered by Google's Gemini API (Gemini 2.0 Flash Lite), it facilitates immersive, "Fiction-First" gameplay.
+The **Discord RPG Game Master Bot** is an advanced AI-powered Game Master for multiplayer, text-based tabletop RPGs. Powered by Google's Gemini API (Gemini 2.0 Flash Lite), it facilitates immersive, "Fiction-First" gameplay through **native Discord Slash Commands**.
 
 It features **Async-First Execution** for a non-blocking Discord experience, **RAG (Retrieval-Augmented Generation)** to index game rules from PDF sourcebooks, **Conversational Memory** to track party context, and a persistent **Master Ledger** system.
 
@@ -9,7 +9,16 @@ It features **Async-First Execution** for a non-blocking Discord experience, **R
 ## 🚀 Key Features
 
 *   **Async-First Design**: Optimized for Discord; all AI computations run asynchronously to prevent connection drops.
-*   **Professional GM Persona**: Follows a strict "Play to Find Out" philosophy, managing spotlight, pacing, and mechanics.
+*   **Professional GM Persona**: Follows a strict "Play to Find Out" philosophy, managing spotlight, pacing, and mechanics through **intuitive slash commands**.
+*   **Comprehensive Slash Commands**: 
+    *   `/help` for a full list of commands.
+    *   `/sheet` to view character details.
+    *   `/ledger` for campaign history and facts.
+    *   `/visual` to request atmospheric images.
+    *   `/ooc` for out-of-character communication.
+    *   `/rewind` to undo narrative turns.
+    *   `/x` for safety pivots.
+    *   `/reset_memory` (admin only) to rebuild campaign memory.
 *   **Context-Full Knowledge**: Ingests high-fidelity Markdown rulebooks directly into the AI's system context for zero-hallucination accuracy.
 *   **True Randomness**: All dice rolls use Python's cryptographically secure `secrets` module - AI never simulates results.
 *   **Persistent Memory**: Manages multiple players via the **Master Ledger** system across sessions.
@@ -82,7 +91,7 @@ Run the bot to start listening to your Discord channel:
 python bot.py
 ```
 *   **Interaction**: The bot only responds in the channel specified by `TARGET_CHANNEL_ID`.
-*   **Slash Commands**: Supports `/roll` for dice rolling. Other commands like `/sheet` and `/visual` are parsed via natural language.
+*   **Commands**: All player interactions are now handled exclusively via native Discord Slash Commands (e.g., `/roll`, `/sheet`, `/help`).
 
 ### Terminal Mode (Testing)
 Test the GM persona and logic directly in your console without sending messages to Discord:
@@ -125,7 +134,7 @@ GM: "A 12! You leap across the chasm with grace..."
 ```
 
 ### Player Roll Requests
-The GM can also queue dice rolls for you. If the GM says "Roll 2d6+3", you can just type `/roll`:
+The GM can also queue dice rolls for you. If the GM says "Roll 2d6+3", you can just type `/roll` (without arguments) to execute the pending roll:
 
 **Example**:
 ```

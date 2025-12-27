@@ -10,7 +10,7 @@ from prettytable import PrettyTable
 import asyncio
 import time
 import pathlib
-import pathlib
+import json
 from typing import Optional
 from dice import roll
 from away import AwayManager
@@ -18,6 +18,7 @@ from away import AwayManager
 # Global state for pending rolls
 pending_rolls = {}
 away_manager = AwayManager()
+PLAYER_MAP_FILE = pathlib.Path("./memory/player_map.json")
 
 # 1. Setup & Configuration
 load_dotenv()
@@ -126,6 +127,36 @@ async def update_ledgers_logic(update_facts):
     except Exception as e:
         print(f"❌ Ledger Update Error: {e}")
 
+async def reverse_ledgers_logic(facts_to_reverse):
+    """Uses the Memory Architect to reverse facts in physical ledger files."""
+    try:
+        current_memory = load_memory()
+        architect_persona_path = pathlib.Path("personas/memory_architect_persona.md")
+        if not architect_persona_path.exists():
+            print("⚠️ Memory Architect persona missing!")
+            return
+            
+        persona_content = architect_persona_path.read_text(encoding="utf-8")
+        
+        prompt = (
+            f"# CURRENT LEDGER STATE\n{current_memory if current_memory else '[Empty]'}\n\n"
+            f"# REWIND EVENT: The following facts are now INCORRECT and must be REVERSED or REMOVED from the ledgers:\n{facts_to_reverse}"
+        )
+        
+        response = await client_genai.aio.models.generate_content(
+            model=AI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=persona_content,
+                temperature=0.1
+            )
+        )
+        if response.text:
+            save_ledger_files(response.text)
+            print("⏪ Ledgers Reversed.")
+    except Exception as e:
+        print(f"❌ Ledger Reversal Error: {e}")
+
 def save_ledger_files(response_text):
     """Parses FILE: blocks from AI response and saves them to ./memory."""
     count = 0
@@ -152,6 +183,38 @@ def save_ledger_files(response_text):
     except Exception as e:
         print(f"❌ Error saving ledgers: {e}")
     return count
+
+def get_character_name(user_id: str, user_name: str) -> Optional[str]:
+    """Gets character name from user ID, falling back to user name."""
+    if not PLAYER_MAP_FILE.exists():
+        return user_name
+
+    with open(PLAYER_MAP_FILE, "r") as f:
+        player_map = json.load(f)
+    
+    return player_map.get(str(user_id), user_name)
+
+def fetch_character_sheet(character_name: str) -> Optional[str]:
+    """
+    Loads all .ledger files and searches for a DATA_TABLE block
+    representing a character sheet for the given character name.
+    Returns the full DATA_TABLE block as a string if found.
+    """
+    memory_dir = pathlib.Path("./memory")
+    if not memory_dir.exists():
+        return None
+
+    all_ledger_content = load_memory()
+    
+    data_table_pattern = r"```DATA_TABLE\s*(.*?)```"
+    all_tables = re.findall(data_table_pattern, all_ledger_content, re.DOTALL | re.IGNORECASE)
+    
+    for table_content in all_tables:
+        title_pattern = r"Title:\s*(?:Character\s+Sheet:\s*)?(" + re.escape(character_name) + r")\s*"
+        if re.search(title_pattern, table_content, re.IGNORECASE):
+            return f"```DATA_TABLE\n{table_content}```"
+            
+    return None
 
 # -------------------------------------------------------------
 # PARSING & FORMATTING UTILITIES 
@@ -522,6 +585,270 @@ async def back_command(interaction: discord.Interaction):
     # We also want to announce they are back to the group.
     await interaction.channel.send(f"🟢 **{interaction.user.display_name}** has returned.")
 
+@tree.command(name="help", description="Shows a list of all available commands.")
+async def help_command(interaction: discord.Interaction):
+    """Shows a list of all available commands."""
+    
+    help_text = """
+    **Game Master Bot Commands**
+
+    Here are the commands you can use to interact with the game world and the bot:
+
+    **Gameplay & Character**
+    `/roll [dice]` - Roll dice (e.g., `2d6+3`). If no dice are specified, executes a roll requested by the GM.
+    `/sheet [user]` - View your character sheet or another player's sheet.
+    `/away [mode]` - Mark yourself as away for a session.
+    `/back` - Return from being away and get a summary of what you missed.
+
+    **Campaign & World**
+    `/ledger` - Display the master campaign ledger.
+    `/visual [prompt]` - Request a visual for the current scene, or a specific prompt.
+
+    **Meta & Utility**
+    `/help` - Shows this help message.
+    `/ooc [message]` - Send an Out-of-Character message to the other players.
+    `/rewind [new_direction]` - Rewind the last narrative action to choose a different path.
+    `/x [reason]` - Use the X-Card safety tool to pivot the scene.
+
+    **Admin**
+    `/reset_memory` - (Admin only) Rebuilds the campaign memory from channel history.
+    """
+    
+    embed = discord.Embed(
+        title="📜 Command List",
+        description=help_text,
+        color=discord.Color.blue()
+    )
+    
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@tree.command(name="sheet", description="View your character sheet or another player's.")
+async def sheet_command(interaction: discord.Interaction, user: Optional[discord.User] = None):
+    """Displays a character sheet."""
+    target_user = user if user else interaction.user
+    
+    character_name = get_character_name(str(target_user.id), target_user.name)
+    
+    if not character_name:
+        await interaction.response.send_message("Could not determine character name.", ephemeral=True)
+        return
+
+    sheet_data_block = fetch_character_sheet(character_name)
+    
+    if not sheet_data_block:
+        await interaction.response.send_message(f"Could not find a character sheet for **{character_name}**.", ephemeral=True)
+        return
+
+    data_table_pattern = r"```DATA_TABLE\s*(.*?)```"
+    match = re.search(data_table_pattern, sheet_data_block, re.DOTALL | re.IGNORECASE)
+    
+    if match:
+        formatted_sheet = render_table_as_ascii(match)
+        await interaction.response.send_message(formatted_sheet)
+    else:
+        await interaction.response.send_message(f"Found sheet data for **{character_name}**, but failed to format it.")
+
+@tree.command(name="ledger", description="Display the master campaign ledger.")
+async def ledger_command(interaction: discord.Interaction):
+    """Displays the master campaign ledger."""
+    
+    ledger_content = load_memory()
+    
+    if not ledger_content:
+        await interaction.response.send_message("The campaign ledger is currently empty.", ephemeral=True)
+        return
+        
+    if len(ledger_content) > 1990:
+        ledger_file = io.BytesIO(ledger_content.encode('utf-8'))
+        await interaction.response.send_message(
+            "The ledger is too large to display. Sending as a file.",
+            file=discord.File(ledger_file, filename="campaign_ledger.md")
+        )
+    else:
+        await interaction.response.send_message(f"```markdown\n{ledger_content}\n```")
+
+@tree.command(name="visual", description="Request a visual for the current scene or a prompt.")
+async def visual_command(interaction: discord.Interaction, prompt: Optional[str] = None):
+    """Requests a visual to be generated by the AI creative director."""
+    
+    await interaction.response.send_message("✨ Your request has been sent to the AI Creative Director.", ephemeral=True)
+    
+    user_id = interaction.user.id
+    
+    if prompt:
+        system_event_message = (
+            f"[System Event: Player <@{user_id}> has requested a visual of \"{prompt}\". "
+            "Generate a VISUAL_PROMPT block based on this, enriched with the current scene's context and our established art style.]"
+        )
+    else:
+        system_event_message = (
+            f"[System Event: Player <@{user_id}> has requested a visual of the current scene. "
+            "Generate a VISUAL_PROMPT block capturing the most recent dramatic moment, enriched with context and style.]"
+        )
+        
+    await interaction.channel.send(system_event_message)
+
+@tree.command(name="ooc", description="Send an Out-of-Character message.")
+async def ooc_command(interaction: discord.Interaction, message: str):
+    """Sends an Out-of-Character message."""
+    
+    await interaction.response.send_message("Your OOC message has been sent.", ephemeral=True)
+    
+    formatted_message = f"[OOC] {interaction.user.display_name}: {message}"
+    
+    await interaction.channel.send(formatted_message)
+
+@tree.command(name="rewind", description="Rewind the last narrative action to choose a different path.")
+async def rewind_command(interaction: discord.Interaction, new_direction: str):
+    """Rewinds the last narrative action."""
+    await interaction.response.defer(ephemeral=True)
+
+    last_bot_message = None
+    async for msg in interaction.channel.history(limit=50):
+        if msg.author == client_discord.user and not msg.content.startswith("[System Event:"):
+            last_bot_message = msg
+            break
+            
+    if not last_bot_message:
+        await interaction.followup.send("Could not find a recent GM narrative to rewind.", ephemeral=True)
+        return
+        
+    memory_update_pattern = r"```MEMORY_UPDATE\s*(.*?)```"
+    memory_match = re.search(memory_update_pattern, last_bot_message.content, re.DOTALL | re.IGNORECASE)
+    if memory_match:
+        facts_to_reverse = memory_match.group(1).strip()
+        if facts_to_reverse:
+            await reverse_ledgers_logic(facts_to_reverse)
+            
+    system_event_message = (
+        f"[System Event: Rewind requested by {interaction.user.display_name}. "
+        f"Disregard the previous GM message. The new direction is: \"{new_direction}\"]"
+    )
+    await interaction.channel.send(system_event_message)
+    
+    await interaction.followup.send("↩️ The narrative has been rewound.", ephemeral=True)
+    try:
+        await last_bot_message.add_reaction("↩️")
+    except discord.HTTPException:
+        pass
+
+class ConfirmView(discord.ui.View):
+    def __init__(self, author):
+        super().__init__(timeout=120)
+        self.value = None
+        self.author = author
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author.id:
+            await interaction.response.send_message("You cannot interact with another user's confirmation.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="Confirm Reset", style=discord.ButtonStyle.danger)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        button.disabled = True
+        self.value = True
+        self.stop()
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer()
+        button.disabled = True
+        self.value = False
+        self.stop()
+
+
+@tree.command(name="reset_memory", description="[Admin] Rebuilds campaign memory from channel history.")
+@discord.app_commands.checks.has_permissions(administrator=True)
+async def reset_memory_command(interaction: discord.Interaction):
+    """Rebuilds campaign memory from channel history."""
+    
+    view = ConfirmView(interaction.user)
+    await interaction.response.send_message(
+        "⚠️ **WARNING**: This will wipe all current memory (.ledger files) and rebuild them from channel history. This can take 1-2 minutes. Are you sure?",
+        view=view,
+        ephemeral=True
+    )
+    
+    await view.wait()
+    
+    if view.value is True:
+        await interaction.edit_original_response(content="🔄 **Memory Reconstruction Started...** Analyzing history.", view=None)
+        try:
+            history_messages = [msg async for msg in interaction.channel.history(limit=500)]
+            history_messages.reverse()
+            
+            history_text = ""
+            for msg in history_messages:
+                name = msg.author.name
+                content = msg.content if msg.content else "[Image/Other]"
+                history_text += f"{name}: {content}\n"
+            
+            architect_persona_path = pathlib.Path("personas/memory_architect_persona.md")
+            if not architect_persona_path.exists():
+                await interaction.channel.send("❌ Error: Memory Architect persona missing.")
+                return
+            persona_content = architect_persona_path.read_text(encoding="utf-8")
+            
+            prompt = f"# FULL CHANNEL HISTORY RECONSTRUCTION\n\n{history_text}\n\nBuild a fresh set of campaign ledgers based on this history."
+            
+            memory_dir = pathlib.Path("./memory")
+            for f in memory_dir.glob("*.ledger"):
+                f.unlink()
+                
+            response = await client_genai.aio.models.generate_content(
+                model=AI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=persona_content,
+                    temperature=0.1
+                )
+            )
+            
+            if response.text:
+                count = save_ledger_files(response.text)
+                await interaction.channel.send(f"✅ **Memory Rebuilt.** Created/Updated {count} ledgers. Use `/ledger` or `/sheet` to verify.")
+            else:
+                await interaction.channel.send("❌ Error: Memory Architect returned no data.")
+                
+        except Exception as e:
+            await interaction.channel.send(f"❌ Error during reset: {e}")
+    else:
+        await interaction.edit_original_response(content="⏳ Reset cancelled.", view=None)
+
+@tree.command(name="x", description="Use the X-Card safety tool to pivot the scene.")
+async def x_card_command(interaction: discord.Interaction, reason: Optional[str] = None):
+    """Handles the X-Card safety tool."""
+    
+    await interaction.response.send_message("Acknowledged. Pivoting the scene.", ephemeral=True)
+    
+    last_bot_message = None
+    async for msg in interaction.channel.history(limit=50):
+        if msg.author == client_discord.user and not msg.content.startswith("[System Event:"):
+            last_bot_message = msg
+            break
+            
+    if last_bot_message:
+        memory_update_pattern = r"```MEMORY_UPDATE\s*(.*?)```"
+        memory_match = re.search(memory_update_pattern, last_bot_message.content, re.DOTALL | re.IGNORECASE)
+        if memory_match:
+            facts_to_reverse = memory_match.group(1).strip()
+            if facts_to_reverse:
+                await reverse_ledgers_logic(facts_to_reverse)
+
+    await interaction.channel.send("Let's pause here and shift the focus. The scene changes...")
+    
+    system_event_message = (
+        f"[System Event: The X-Card safety tool was used by {interaction.user.display_name}. "
+        "Disregard the previous topic completely and pivot the narrative to a different scene or focus. "
+        "Do not refer to the uncomfortable content again."
+    )
+    if reason:
+        system_event_message += f" Provided reason: \"{reason}\""
+        
+    await interaction.channel.send(system_event_message)
+
 def run_terminal_mode():
     """Runs the bot in an interactive terminal loop."""
     print(f"🎮 Terminal Mode: {AI_MODEL}")
@@ -622,67 +949,20 @@ async def on_message(message):
     if message.channel.id != TARGET_CHANNEL_ID:
         return
 
-    # 1. SPECIAL COMMAND: /reset_memory
-    if message.content.strip().lower() == "/reset_memory":
-        try:
-            await message.channel.send("⚠️ **WARNING**: This will wipe all current memory (.ledger files) and rebuild them from the channel history. This can take 1-2 minutes.\nDo you want to proceed? Type **'yes'** to confirm within 2 minutes.")
-            
-            def check(m):
-                return m.author == message.author and m.channel == message.channel and m.content.lower().strip() == "yes"
-                
-            confirm_msg = await client_discord.wait_for('message', check=check, timeout=120)
-            await message.channel.send("🔄 **Memory Reconstruction Started...** Analyzing history.")
-            
-            # Fetch History
-            history_messages = [msg async for msg in message.channel.history(limit=200)]
-            history_messages.reverse()
-            
-            history_text = ""
-            for msg in history_messages:
-                name = msg.author.name
-                content = msg.content if msg.content else "[Image/Other]"
-                history_text += f"{name}: {content}\n"
-            
-            # Persona Load
-            architect_persona_path = pathlib.Path("personas/memory_architect_persona.md")
-            if not architect_persona_path.exists():
-                await message.channel.send("❌ Error: Memory Architect persona missing.")
-                return
-            persona_content = architect_persona_path.read_text(encoding="utf-8")
-            
-            prompt = f"# FULL CHANNEL HISTORY RECONSTRUCTION\n\n{history_text}\n\nBuild a fresh set of campaign ledgers based on this history."
-            
-            # Clear old Ledger Files
-            memory_dir = pathlib.Path("./memory")
-            for f in memory_dir.glob("*.ledger"):
-                f.unlink()
-                
-            # Call Architect (Async)
-            response = await client_genai.aio.models.generate_content(
-                model=AI_MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=persona_content,
-                    temperature=0.1
-                )
-            )
-            
-            if response.text:
-                count = save_ledger_files(response.text)
-                await message.channel.send(f"✅ **Memory Rebuilt.** Created/Updated {count} ledgers. Use `/ledger` or `/sheet` to verify.")
-            else:
-                await message.channel.send("❌ Error: Memory Architect returned no data.")
-                
-        except asyncio.TimeoutError:
-            await message.channel.send("⏳ Reset cancelled (Timeout).")
-        except Exception as e:
-            await message.channel.send(f"❌ Error during reset: {e}")
-        return
-
     async with message.channel.typing():
         try:
             # Context Continuity: Fetch history
-            history_messages = [msg async for msg in message.channel.history(limit=15, before=message)]
+            is_rewind_event = message.content.startswith("[System Event: Rewind")
+            history_limit = 15
+            history_messages = [msg async for msg in message.channel.history(limit=history_limit, before=message)]
+
+            if is_rewind_event and history_messages:
+                # If this is a rewind, the message just before this one is the System Event from the /rewind command.
+                # The message before THAT is the GM message we need to ignore.
+                # The history is returned newest-to-oldest, so we check the first element.
+                if history_messages[0].author == client_discord.user:
+                    history_messages.pop(0)
+
             history_messages.reverse()
             
             gemini_history = []

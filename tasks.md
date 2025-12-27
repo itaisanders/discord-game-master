@@ -9,6 +9,13 @@ This file tracks the current active development, bug fixes, and feature requests
 
 ---
 
+## ✅ Completed Tasks
+
+### Implement Native Slash Commands (Completed: 2025-12-27)
+**Objective**: Convert all player-facing commands defined in `personas/gm_persona.md` from implicit text-based commands into explicit, native Discord slash commands. This improved user experience, reliability, and discoverability.
+
+---
+
 ## 🛠️ Operational Protocol
 1.  **Selection**: Choose a task from the **Active Tasks** or **Backlog**.
 2.  **Planning**: Use Planning Mode to draft an implementation plan.
