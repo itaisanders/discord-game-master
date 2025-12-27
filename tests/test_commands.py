@@ -61,7 +61,7 @@ async def test_ledger_command_with_content(mock_interaction):
     with patch("bot.load_memory", return_value=ledger_content):
         await ledger_command.callback(mock_interaction)
         mock_interaction.response.send_message.assert_called_once_with(
-            f"```markdown\n{ledger_content}\n```"
+            f"```markdown\n{ledger_content}\n```", ephemeral=True
         )
 
 @pytest.mark.asyncio
@@ -97,8 +97,5 @@ async def test_sheet_command_found(mock_interaction):
 
         await sheet_command.callback(mock_interaction)
         
-        # Verify the followup message indicates success
-        mock_interaction.edit_original_response.assert_called_once_with(content="Character sheet for **TestCharacter** sent!")
-
-        # Verify the public message contains the correct sheet content
-        mock_interaction.channel.send.assert_called_once_with(expected_message)
+        # Verify the sheet is sent ephemerally via followup
+        mock_interaction.followup.send.assert_called_once_with(expected_message, ephemeral=True)

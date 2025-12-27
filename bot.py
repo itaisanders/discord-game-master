@@ -647,14 +647,12 @@ async def sheet_command(interaction: discord.Interaction, user: Optional[discord
         await interaction.followup.send(f"Could not find a character sheet for **{character_name}**.", ephemeral=True)
         return
 
-    # Send the raw sheet data block, as it's already formatted by the Memory Architect
-    # Handle Discord message length limits
-    if len(sheet_data_block) > 1990: # Slightly less than 2000 to be safe
-        await interaction.channel.send(f"```markdown\n{sheet_data_block[:1990]}...\n```")
-        await interaction.followup.send("Character sheet too long, truncated. Use /ledger for full details.", ephemeral=True)
-    else:
-        await interaction.channel.send(f"```markdown\n{sheet_data_block}\n```")
-    await interaction.edit_original_response(content=f"Character sheet for **{character_name}** sent!")
+    # Send the raw sheet data block ephemerally
+    content = f"```markdown\n{sheet_data_block}\n```"
+    if len(content) > 2000:
+        content = f"```markdown\n{sheet_data_block[:1950]}...\n```\n(Sheet was truncated)"
+
+    await interaction.followup.send(content, ephemeral=True)
 
 @tree.command(name="ledger", description="Display the master campaign ledger.")
 async def ledger_command(interaction: discord.Interaction):
@@ -670,10 +668,11 @@ async def ledger_command(interaction: discord.Interaction):
         ledger_file = io.BytesIO(ledger_content.encode('utf-8'))
         await interaction.response.send_message(
             "The ledger is too large to display. Sending as a file.",
-            file=discord.File(ledger_file, filename="campaign_ledger.md")
+            file=discord.File(ledger_file, filename="campaign_ledger.md"),
+            ephemeral=True
         )
     else:
-        await interaction.response.send_message(f"```markdown\n{ledger_content}\n```")
+        await interaction.response.send_message(f"```markdown\n{ledger_content}\n```", ephemeral=True)
 
 @tree.command(name="visual", description="Request a visual for the current scene or a prompt.")
 async def visual_command(interaction: discord.Interaction, prompt: Optional[str] = None):
