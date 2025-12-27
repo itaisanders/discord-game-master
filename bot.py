@@ -898,3 +898,7 @@ if __name__ == "__main__":
         run_terminal_mode()
     else:
         client_discord.run(DISCORD_TOKEN)
+
+def _syntax_check():
+    """A simple function to confirm the file is syntactically correct."""
+    return True

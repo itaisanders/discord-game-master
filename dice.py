@@ -250,3 +250,7 @@ if __name__ == "__main__":
                 break
             except Exception as e:
                 print(f"❌ Unexpected error: {e}\n")
+
+def _syntax_check():
+    """A simple function to confirm the file is syntactically correct."""
+    return True

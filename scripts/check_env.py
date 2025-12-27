@@ -24,3 +24,7 @@ def verify_setup():
 
 if __name__ == "__main__":
     verify_setup()
+
+def _syntax_check():
+    """A simple function to confirm the file is syntactically correct."""
+    return True

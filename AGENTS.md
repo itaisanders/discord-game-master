@@ -398,6 +398,7 @@ with patch("bot.client_genai.aio.models.generate_content", new_callable=AsyncMoc
 - All tests must pass before committing
 - Use `pytest -v` for verbose output during debugging
 - Mock external dependencies (Gemini API, Discord client)
+- **New Python scripts/modules**: Must include a `_syntax_check()` function (returning `True`) and a corresponding entry in `tests/test_syntax.py` to ensure importability and basic syntax validity.
 
 ### File Organization
 

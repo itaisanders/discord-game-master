@@ -1,4 +1,3 @@
-
 import os
 import pathlib
 import argparse
@@ -63,3 +62,8 @@ if __name__ == "__main__":
         exit(1)
         
     process_book(args.pdf_path)
+
+
+def _syntax_check():
+    """A simple function to confirm the file is syntactically correct."""
+    return True

@@ -76,3 +76,7 @@ class AwayManager:
     def get_all_away_users(self) -> Dict[str, Dict]:
         """Returns a dictionary of all currently away users."""
         return self.data.copy()
+
+def _syntax_check():
+    """A simple function to confirm the file is syntactically correct."""
+    return True

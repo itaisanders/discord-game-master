@@ -1,4 +1,3 @@
-
 import os
 import time
 import pathlib
@@ -117,3 +116,7 @@ if __name__ == "__main__":
             exit(1)
 
     run_analysis(target_pdf)
+
+def _syntax_check():
+    """A simple function to confirm the file is syntactically correct."""
+    return True
