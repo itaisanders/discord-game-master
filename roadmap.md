@@ -35,6 +35,11 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - **Phase 2**: Custom Move Injection (Allowing the AI to create unique situational "Moves" on the fly).
 - **Phase 3**: AI-to-AI "Architect" Mode (One AI narrates, another manages world logic in the background).
 
+### 5. Player Feedback Loop ("The GM Listens")
+*Focus: Systematically gathering and learning from player feedback to improve GM performance.*
+- **Phase 1**: Explicit feedback commands.
+- **Phase 2**: Implicit feedback analysis.
+
 ---
 
 ## 📅 High-Level Milestones
@@ -51,7 +56,12 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 ### 🟡 Phase 2: expansion
 - [x] **Context-Full Knowledge**: Replace RAG with direct Markdown context ingestion for rulebooks.
 - [x] **Away Mode**: Allow players to mark themselves as absent for a session with configurable character handling (ignore character, play as NPC, or narrative excuse).
+- [ ] **Stars and Wishes**: Implement a player feedback system.
+    - `/stars [message]`: Players highlight something they enjoyed.
+    - `/wishes [message]`: Players suggest something they'd like to see in the future.
+    - Implicit Feedback: The AI will be instructed to analyze player messages for sentiment and content that can be interpreted as a "star" or a "wish".
 - [ ] **Table State Machine**: Implement OOC vs IC state management to prevent meta-bleed.
+- [ ] **Dedicated Player Ledger**: Refactor the current `party.ledger` mapping into a dedicated `players.ledger` to centralize User ID, username, and character name associations, making it more robust and easier to manage.
 - [ ] **Vocal Summaries**: Audio/text session recaps since the last logout.
 - [ ] **Atmosphere 2.0**: Refined visual generation styles and ambient task suggestions.
 

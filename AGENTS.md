@@ -58,9 +58,9 @@ For slash commands that require multi-step user interaction (e.g., `/rewind` awa
 **Behavior**: During this state, other game-related commands from the same user or conflicting commands from other users may be temporarily ignored, or the bot may issue a message prompting completion of the current interaction, to prevent logical conflicts and maintain coherent command processing.
 
 #### Player Identity Mapping
-The bot maintains a persistent mapping between Discord User IDs (`<@ID>`) and in-game Character Names. This mapping is critical for commands like `/sheet` to correctly identify which character a player is referring to, whether themselves or another player.
+The bot maintains a persistent mapping between Discord User IDs (`<@ID>` or `@username`) and in-game Character Names. This mapping is critical for commands like `/sheet` to correctly identify which character a player is referring to.
 
-**Mechanism**: A dedicated storage (e.g., `memory/player_map.json` or a specific `.ledger` file) will store these associations. This ensures that character-specific commands operate on the correct in-game entity.
+**Mechanism**: The **`party.ledger`** file is the single source of truth for this mapping. The `get_character_name` function in `bot.py` parses this ledger's Markdown table, correlating the `User` column with the `Name` column to find the correct character. This avoids data duplication and centralizes party information.
 
 #### Multi-Persona Architecture
 The bot uses **specialized AI personas** for different tasks:

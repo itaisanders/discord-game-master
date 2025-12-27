@@ -15,13 +15,12 @@ from typing import Optional
 from dice import roll
 from away import AwayManager
 
-# Global state for pending rolls
+# 1. Setup & Configuration - Load environment variables first
+load_dotenv()
+
+# Global state and environment variables (after dotenv loaded)
 pending_rolls = {}
 away_manager = AwayManager()
-PLAYER_MAP_FILE = pathlib.Path("./memory/player_map.json")
-
-# 1. Setup & Configuration
-load_dotenv()
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -51,11 +50,45 @@ except ValueError:
         exit(1)
     TARGET_CHANNEL_ID = 0
 
-import pathlib
+def get_character_name(user_id: str, user_name: str) -> Optional[str]:
+    """
+    Finds a character's name by searching the party.ledger for a matching
+    Discord User ID or username.
+    """
+    party_ledger_path = pathlib.Path("./memory/party.ledger")
+    if not party_ledger_path.exists():
+        return None
+
+    try:
+        content = party_ledger_path.read_text(encoding="utf-8")
+        lines = content.split('\n')
+        
+        # Simple table parsing, assuming Name is the first column and User is the second
+        # and they are separated by '|'
+        for line in lines:
+            if not line.strip().startswith('|'):
+                continue
+                
+            cols = [c.strip() for c in line.split('|')]
+            if len(cols) > 2:
+                name_col = cols[1].replace('**', '').strip()
+                user_col = cols[2]
+                
+                # Check for ID match <@12345> or username match @username
+                if f"<@{user_id}>" in user_col or f"@{user_name}" in user_col:
+                    return name_col
+    except Exception as e:
+        print(f"Error parsing party.ledger for character name: {e}")
+        return None
+    
+    return None
 
 # Load Persona (Dynamic Load)
 def load_full_context():
-    """Loads the base persona and injects any markdown files from ./knowledge."""
+    """
+    Loads the base persona and injects any markdown files from ./knowledge.
+    NOTE: This is intentionally placed after global env vars for FULL_SYSTEM_INSTRUCTION.
+    """
     context_parts = []
 
     # 1. Load Base Persona
@@ -184,15 +217,6 @@ def save_ledger_files(response_text):
         print(f"❌ Error saving ledgers: {e}")
     return count
 
-def get_character_name(user_id: str, user_name: str) -> Optional[str]:
-    """Gets character name from user ID, falling back to user name."""
-    if not PLAYER_MAP_FILE.exists():
-        return user_name
-
-    with open(PLAYER_MAP_FILE, "r") as f:
-        player_map = json.load(f)
-    
-    return player_map.get(str(user_id), user_name)
 
 def fetch_character_sheet(character_name: str) -> Optional[str]:
     """
@@ -206,7 +230,7 @@ def fetch_character_sheet(character_name: str) -> Optional[str]:
 
     all_ledger_content = load_memory()
     
-    data_table_pattern = r"```DATA_TABLE\s*(.*?)```"
+    data_table_pattern = r"```DATA_TABLE\s*(.*?)"
     all_tables = re.findall(data_table_pattern, all_ledger_content, re.DOTALL | re.IGNORECASE)
     
     for table_content in all_tables:
@@ -328,7 +352,9 @@ def process_roll_calls(text):
     return processed
 
 def render_table_as_ascii(match):
-    """Processes a DATA_TABLE block into a PrettyTable ASCII string."""
+    """
+    Processes a DATA_TABLE block into a PrettyTable ASCII string.
+    """
     table_block = match.group(1)
     try:
         lines = [l.strip() for l in table_block.strip().split('\n') if l.strip()]
@@ -354,7 +380,7 @@ def render_table_as_ascii(match):
             
             for row in rows:
                 if len(row) < len(headers):
-                    row.extend([""] * (len(headers) - len(row)))
+                    row.extend(["" ] * (len(headers) - len(row)))
                 pt.add_row(row[:len(headers)])
             
             return f"**{title}**\n```text\n{pt.get_string()}\n```"
@@ -364,7 +390,9 @@ def render_table_as_ascii(match):
     return match.group(0)
 
 def process_response_formatting(text):
-    """Handles all regex-based replacements and extractions (DATA_TABLE, MEMORY_UPDATE, VISUAL_PROMPT)."""
+    """
+    Handles all regex-based replacements and extractions (DATA_TABLE, MEMORY_UPDATE, VISUAL_PROMPT).
+    """
     
     # 0. Safety Net: Filter Away Mentions
     text = filter_away_mentions(text)
@@ -375,7 +403,6 @@ def process_response_formatting(text):
         print("🔍 Found DATA_TABLE block.")
     text = re.sub(data_table_pattern, render_table_as_ascii, text, flags=re.DOTALL | re.IGNORECASE).strip()
     
-    # 2. MEMORY_UPDATE (Case Insensitive + Flexible Whitespace)
     memory_update_pattern = r"```MEMORY_UPDATE\s*(.*?)```"
     memory_match = re.search(memory_update_pattern, text, re.DOTALL | re.IGNORECASE)
     facts = None
@@ -396,7 +423,7 @@ def process_response_formatting(text):
     else:
         # Fallback: Header + the Structure brackets (for when AI forgets backticks or uses bolding)
         # We look for the keyword and then any sequence of [...] blocks
-        fallback_pattern = r"(?:\*+|#+)?\s*VISUAL_PROMPT\s*(?:\*+|#+)?(?::|-)?\s*((?:\[.*?\]\s*)+)"
+        fallback_pattern = r"(?!\*+|#+)?\s*VISUAL_PROMPT\s*(?!\*+|#+)?(?:[:-])?\s*((?:\\\\[.*?\\\\]\s*)+)"
         fallback_match = re.search(fallback_pattern, text, re.DOTALL | re.IGNORECASE)
         if fallback_match:
             print("🔍 Found fallback VISUAL_PROMPT structure.")
@@ -554,14 +581,14 @@ async def back_command(interaction: discord.Interaction):
             
             # 2. Generate Summary using AI
             # We use a quick prompt to the model
-            prompt = f"""
+            prompt = """
             # TASK: Catch-Up Summary
-            A player ({interaction.user.display_name}) has returned after being away.
+            A player ({user_display_name}) has returned after being away.
             Summarize the following recent events for them in 3-4 bullet points. Focus on what their character needs to know.
             
             # RECENT SCENE LOG:
-            {history_block}
-            """
+            {log_history_block}
+            """.format(user_display_name=interaction.user.display_name, log_history_block=history_block)
             
             response = await client_genai.aio.models.generate_content(
                 model=AI_MODEL,
@@ -589,30 +616,10 @@ async def back_command(interaction: discord.Interaction):
 async def help_command(interaction: discord.Interaction):
     """Shows a list of all available commands."""
     
-    help_text = """
-    **Game Master Bot Commands**
-
-    Here are the commands you can use to interact with the game world and the bot:
-
-    **Gameplay & Character**
-    `/roll [dice]` - Roll dice (e.g., `2d6+3`). If no dice are specified, executes a roll requested by the GM.
-    `/sheet [user]` - View your character sheet or another player's sheet.
-    `/away [mode]` - Mark yourself as away for a session.
-    `/back` - Return from being away and get a summary of what you missed.
-
-    **Campaign & World**
-    `/ledger` - Display the master campaign ledger.
-    `/visual [prompt]` - Request a visual for the current scene, or a specific prompt.
-
-    **Meta & Utility**
-    `/help` - Shows this help message.
-    `/ooc [message]` - Send an Out-of-Character message to the other players.
-    `/rewind [new_direction]` - Rewind the last narrative action to choose a different path.
-    `/x [reason]` - Use the X-Card safety tool to pivot the scene.
-
-    **Admin**
-    `/reset_memory` - (Admin only) Rebuilds the campaign memory from channel history.
-    """
+    help_text = "Could not find the help file."
+    help_file_path = pathlib.Path("personas/help_text.md")
+    if help_file_path.exists():
+        help_text = help_file_path.read_text(encoding="utf-8")
     
     embed = discord.Embed(
         title="📜 Command List",
@@ -639,7 +646,7 @@ async def sheet_command(interaction: discord.Interaction, user: Optional[discord
         await interaction.response.send_message(f"Could not find a character sheet for **{character_name}**.", ephemeral=True)
         return
 
-    data_table_pattern = r"```DATA_TABLE\s*(.*?)```"
+    data_table_pattern = r"```DATA_TABLE\s*(.*?)"
     match = re.search(data_table_pattern, sheet_data_block, re.DOTALL | re.IGNORECASE)
     
     if match:
@@ -713,7 +720,7 @@ async def rewind_command(interaction: discord.Interaction, new_direction: str):
         await interaction.followup.send("Could not find a recent GM narrative to rewind.", ephemeral=True)
         return
         
-    memory_update_pattern = r"```MEMORY_UPDATE\s*(.*?)```"
+    memory_update_pattern = r"```MEMORY_UPDATE\s*(.*?)"
     memory_match = re.search(memory_update_pattern, last_bot_message.content, re.DOTALL | re.IGNORECASE)
     if memory_match:
         facts_to_reverse = memory_match.group(1).strip()
@@ -829,13 +836,16 @@ async def x_card_command(interaction: discord.Interaction, reason: Optional[str]
             last_bot_message = msg
             break
             
-    if last_bot_message:
-        memory_update_pattern = r"```MEMORY_UPDATE\s*(.*?)```"
-        memory_match = re.search(memory_update_pattern, last_bot_message.content, re.DOTALL | re.IGNORECASE)
-        if memory_match:
-            facts_to_reverse = memory_match.group(1).strip()
-            if facts_to_reverse:
-                await reverse_ledgers_logic(facts_to_reverse)
+    if not last_bot_message:
+        await interaction.followup.send("Could not find a recent GM narrative to rewind.", ephemeral=True)
+        return
+        
+    memory_update_pattern = r"```MEMORY_UPDATE\s*(.*?)"
+    memory_match = re.search(memory_update_pattern, last_bot_message.content, re.DOTALL | re.IGNORECASE)
+    if memory_match:
+        facts_to_reverse = memory_match.group(1).strip()
+        if facts_to_reverse:
+            await reverse_ledgers_logic(facts_to_reverse)
 
     await interaction.channel.send("Let's pause here and shift the focus. The scene changes...")
     
@@ -893,11 +903,11 @@ def run_terminal_mode():
             if gemini_history and gemini_history[-1].role == "user":
                  gemini_history.append(types.Content(
                     role="model",
-                    parts=[types.Part(text="*(Acknowledging context...)*")]
+                    parts=[types.Part(text="*(Acknowledging history context...)*")]
                 ))
 
             # 2. Create Chat Session
-            chat = client_genai.chats.create(
+            chat = client_genai.aio.chats.create(
                 model=AI_MODEL,
                 config=types.GenerateContentConfig(
                     system_instruction=FULL_SYSTEM_INSTRUCTION,
@@ -976,7 +986,7 @@ async def on_message(message):
                 
                 # Format text with the required @Username mapping
                 if not is_bot:
-                    formatted_text = f"User [Name: @{msg.author.name}, ID: <@{msg.author.id}>]: {content_text}"
+                    formatted_text = f"User [Name: @{message.author.name}, ID: <@{message.author.id}>]: {content_text}"
                 else:
                     formatted_text = content_text
                     
