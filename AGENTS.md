@@ -52,6 +52,19 @@ A core pattern for slash commands that need to influence the narrative is **Syst
 
 **Example**: `/visual "a mysterious door"` injects `[System Event: Player @PlayerName has requested a visual of "a mysterious door"...]`. The AI then generates the detailed `VISUAL_PROMPT` block itself. This pattern is used for `/visual`, `/rewind`, `/ooc`, and `/x`.
 
+#### Interactive Feedback & Confirmation
+For features requiring player feedback, such as `/stars` and `/wishes`, the bot uses an interactive confirmation loop to ensure the AI's understanding aligns with the player's intent.
+
+**Pattern**:
+1.  **User Input**: A player uses a slash command (e.g., `/stars "The dragon fight was epic!"`).
+2.  **AI Interpretation**: The bot sends the feedback to the Gemini API with a specialized prompt, asking the GM persona to interpret the player's input and state how it will act on it.
+3.  **User Verification**: The bot presents both the original feedback and the AI's interpretation to the user in a private (ephemeral) message, along with `[Confirm & Save]` and `[Cancel]` buttons (using a `discord.ui.View`).
+4.  **Action**:
+    - If **Confirm**, the feedback (including the AI's interpretation) is permanently recorded in a ledger.
+    - If **Cancel**, the feedback is discarded.
+
+**Rationale**: This closes the loop on player feedback, provides transparency into the GM's "thinking," and creates a richer, more actionable dataset for long-term campaign improvement. It prevents misunderstandings and ensures player input is valued and correctly applied.
+
 #### Command State Management
 For slash commands that require multi-step user interaction (e.g., `/rewind` awaiting a `new_direction`), the bot employs temporary state management. When such a command is initiated, the bot enters an "awaiting input" state for the specific user.
 

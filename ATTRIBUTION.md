@@ -8,6 +8,7 @@ This project implements narrative and mechanical logic derived from various tabl
 * **The Alexandrian**: "Node-Based Design," "The Three Clue Rule," and "Xandering" by Justin Alexander.
 * **The X-Card**: Safety tool by John Stavropoulos. Note: Used under [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 * **The Lazy Dungeon Master**: Preparation framework by Mike Shea (Sly Flourish).
+* **Stars and Wishes**: Player feedback system by Lu Quade, first published on The Gauntlet Blog in 2018.
 
 ---
 

@@ -26,6 +26,27 @@ It features **Async-First Execution** for a non-blocking Discord experience, **R
 
 ---
 
+## 🎮 Player Commands
+
+All player interactions are handled via native Discord Slash Commands for ease of use.
+
+| Command | Description |
+| :--- | :--- |
+| `/roll [dice]` | Roll dice (e.g., `2d6+3`). Can also be used without arguments to execute a GM-requested roll. |
+| `/sheet [user]`| View your character sheet or another player's. |
+| `/stars [message]` | **(New!)** Give feedback on something you enjoyed. The GM will confirm its understanding. |
+| `/wishes [message]`| **(New!)** Suggest something you'd like to see in the future. The GM will confirm its understanding. |
+| `/away [mode]` | Set your status to away (`Auto-Pilot`, `Off-Screen`, `Narrative Exit`). |
+| `/back` | Return from being away and receive a catch-up summary. |
+| `/ooc [message]` | Send a message that is explicitly out-of-character. |
+| `/visual [prompt]`| Request an atmospheric image for the current scene. |
+| `/rewind [new_direction]` | Ask the GM to rewind the last narrative beat and suggest a new path. |
+| `/x [reason]` | Use the X-Card safety tool to immediately pivot the scene away from uncomfortable content. |
+| `/help` | Shows a list of all available commands. |
+| `/ledger` | View the master campaign ledger file. |
+
+---
+
 ## 🛠️ Setup & Installation
 
 ### 1. Prerequisites
