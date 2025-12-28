@@ -94,6 +94,7 @@ The project uses `pytest` for automated testing.
 *   **Slash Commands**: All new player-facing commands should be implemented as native Discord Slash Commands using the `@tree.command()` decorator in `bot.py`.
 *   **Stateful Management**: For complex features like player absence, encapsulate the logic and state management into a dedicated class or module (see `away.py` as an example).
 *   **Testing**: New features, especially those involving protocol parsing or state changes, should be accompanied by unit tests in the `tests/` directory.
+    *   **Live Instance Verification for Complex AI Logic**: Recognize that certain intricate asynchronous AI logic, especially within Discord event handlers, may be impractical or impossible to fully unit test in a simulated environment due to interaction complexity and the nature of mock objects. For such cases, comprehensive testing and verification on a live instance (e.g., a development bot connected to a private Discord channel) may be a necessary and acceptable testing strategy.
 
 ### Development Workflow
 
