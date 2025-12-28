@@ -27,3 +27,6 @@ Thumbs.db
 # Bot runtime files
 bot.log
 bot.pid
+
+.gemini/
+gha-creds-*.json
