@@ -94,3 +94,19 @@ The project uses `pytest` for automated testing.
 *   **Slash Commands**: All new player-facing commands should be implemented as native Discord Slash Commands using the `@tree.command()` decorator in `bot.py`.
 *   **Stateful Management**: For complex features like player absence, encapsulate the logic and state management into a dedicated class or module (see `away.py` as an example).
 *   **Testing**: New features, especially those involving protocol parsing or state changes, should be accompanied by unit tests in the `tests/` directory.
+
+### Development Workflow
+
+A crucial part of our development process is ensuring stability and correctness. Whenever code changes are made:
+
+1.  **Run All Tests**: Execute the full test suite using `pytest`.
+    ```bash
+    pytest
+    ```
+2.  **Verify Pass**: Confirm that all tests pass successfully.
+3.  **Restart Bot**: Only if all tests pass, restart the bot to apply the changes.
+    ```bash
+    ./manage.sh restart
+    ```
+
+4.  **Git Commits**: When committing changes, explicitly add only the relevant source code, test, and documentation files (`.py`, `.md`, `.ini`, etc.). **Do not stage or commit the `tasks.md` file.**
