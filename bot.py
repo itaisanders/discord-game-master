@@ -766,6 +766,111 @@ class ConfirmView(discord.ui.View):
         self.stop()
 
 
+class FeedbackConfirmView(discord.ui.View):
+    def __init__(self, author, feedback_type: str, original_message: str, interpretation: str, channel):
+        super().__init__(timeout=300)
+        self.value = None
+        self.author = author
+        self.feedback_type = feedback_type
+        self.original_message = original_message
+        self.interpretation = interpretation
+        self.channel = channel
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.author.id:
+            await interaction.response.send_message("You cannot interact with another user's feedback confirmation.", ephemeral=True)
+            return False
+        return True
+
+    @discord.ui.button(label="Confirm & Save", style=discord.ButtonStyle.success)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await record_feedback(self.feedback_type, self.author.name, self.original_message, self.interpretation)
+        self.value = True
+        self.stop()
+        button.disabled = True
+        
+        # Public confirmation message
+        feedback_summary = self.interpretation.split('```')[0].strip() # Get text before the code block
+        if len(feedback_summary) > 280:
+             feedback_summary = feedback_summary[:280] + "..."
+
+        icon = "⭐" if self.feedback_type == "star" else "🙏"
+        public_message = f"{icon} The GM has noted a new '{self.feedback_type.capitalize()}' from a player: *\"{feedback_summary}\"*"
+        
+        await self.channel.send(public_message)
+        
+        # Update the original ephemeral message to show it's been saved.
+        await interaction.response.edit_message(content="✅ Got it. Your feedback has been recorded and shared with the party.", view=None)
+
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.secondary)
+    async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.value = False
+        self.stop()
+        button.disabled = True
+        await interaction.response.edit_message(content="Feedback cancelled.", view=None)
+
+
+async def get_feedback_interpretation(feedback_type: str, message: str) -> str:
+    """Uses the GM persona to interpret player feedback."""
+    try:
+        # We don't need the full system instruction here, just the GM persona file
+        gm_persona_path = pathlib.Path(PERSONA_FILE)
+        if not gm_persona_path.exists():
+            return "Error: GM Persona file not found."
+        
+        persona_content = gm_persona_path.read_text(encoding="utf-8")
+        
+        prompt = (
+            f"A player has provided feedback. As the GM, your task is to understand their input and explain what you will do with it.\n\n"
+            f"The feedback is a '{feedback_type.upper()}'. This means they {'liked something and want more of it' if feedback_type == 'star' else 'want to see something in the future'}.\n\n"
+            f"**Player's Feedback:** \"{message}\"\n\n"
+            f"**Your Interpretation:** Briefly explain your understanding of this feedback and how it might influence future sessions. Start with 'I understand...'. Then, create a ```FEEDBACK_UPDATE``` block containing a concise, structured fact for your long-term memory."
+        )
+
+        response = await client_genai.aio.models.generate_content(
+            model=AI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=persona_content,
+                temperature=0.7 # A bit of creativity in interpretation is good
+            )
+        )
+        return response.text.strip()
+    except Exception as e:
+        print(f"❌ Feedback Interpretation Error: {e}")
+        return "Sorry, I had trouble understanding that. Please try again."
+
+async def record_feedback(feedback_type: str, user: str, message: str, interpretation: str):
+    """
+    Parses the FEEDBACK_UPDATE block from the interpretation and appends it 
+    to the feedback.ledger file.
+    """
+    feedback_ledger_path = pathlib.Path("./memory/feedback.ledger")
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Extract content from the FEEDBACK_UPDATE block
+    feedback_pattern = r"```FEEDBACK_UPDATE\s*(.*?)```"
+    match = re.search(feedback_pattern, interpretation, re.DOTALL | re.IGNORECASE)
+    
+    if not match:
+        print(f"⚠️ No FEEDBACK_UPDATE block found in interpretation. Storing raw interpretation.")
+        # Fallback to save the most important part of the interpretation
+        feedback_content = f"- [Raw Interpretation] {interpretation.split('```')[0].strip()}"
+    else:
+        feedback_content = match.group(1).strip()
+
+    entry = (
+        f"# Entry added on {timestamp} from user {user}\n"
+        f"{feedback_content}\n\n"
+    )
+    
+    try:
+        with open(feedback_ledger_path, "a", encoding="utf-8") as f:
+            f.write(entry)
+    except Exception as e:
+        print(f"❌ Failed to write to feedback.ledger: {e}")
+
+
 @tree.command(name="reset_memory", description="[Admin] Rebuilds campaign memory from channel history.")
 @discord.app_commands.checks.has_permissions(administrator=True)
 async def reset_memory_command(interaction: discord.Interaction):
@@ -858,6 +963,81 @@ async def x_card_command(interaction: discord.Interaction, reason: Optional[str]
         system_event_message += f" Provided reason: \"{reason}\""
         
     await interaction.channel.send(system_event_message)
+
+@tree.command(name="stars", description="Tell the GM something you enjoyed.")
+async def stars_command(interaction: discord.Interaction, message: str):
+    """Handles the Stars feedback command."""
+    await interaction.response.defer(ephemeral=True, thinking=True)
+    
+    interpretation = await get_feedback_interpretation("star", message)
+    
+    view = FeedbackConfirmView(interaction.user, "star", message, interpretation, interaction.channel)
+    
+    content = (
+        f"### ⭐ Thank you for your feedback!\n\n"
+        f"**You said:**\n> {message}\n\n"
+        f"**Here's how the GM understood your feedback:**\n> {interpretation}\n\n"
+        f"Does this interpretation seem correct?"
+    )
+
+    # Truncate content if it exceeds Discord's character limit
+    if len(content) > 2000:
+        # Define all static text elements
+        header = f"### ⭐ Thank you for your feedback!\n\n**You said:**\n> {message}\n\n"
+        interp_header = "**Here's how the GM understood your feedback:**\n> "
+        footer = "\n\nDoes this interpretation seem correct?\n*(The GM's interpretation was truncated to fit.)*"
+        
+        # Calculate the maximum possible length for the interpretation text
+        max_interp_len = 2000 - (len(header) + len(interp_header) + len(footer))
+        
+        # Ensure max_interp_len is not negative
+        if max_interp_len < 0:
+            max_interp_len = 0
+            
+        truncated_interpretation = interpretation[:max_interp_len] + "..."
+
+        content = f"{header}{interp_header}{truncated_interpretation}{footer}"
+
+    await interaction.followup.send(content, view=view, ephemeral=True)
+    # The view handles the followup interaction (edit to confirm/cancel)
+
+
+@tree.command(name="wishes", description="Tell the GM something you'd like to see in the future.")
+async def wishes_command(interaction: discord.Interaction, message: str):
+    """Handles the Wishes feedback command."""
+    await interaction.response.defer(ephemeral=True, thinking=True)
+    
+    interpretation = await get_feedback_interpretation("wish", message)
+    
+    view = FeedbackConfirmView(interaction.user, "wish", message, interpretation, interaction.channel)
+    
+    content = (
+        f"### 🙏 Thank you for your feedback!\n\n"
+        f"**You said:**\n> {message}\n\n"
+        f"**Here's how the GM understood your feedback:**\n> {interpretation}\n\n"
+        f"Does this interpretation seem correct?"
+    )
+
+    # Truncate content if it exceeds Discord's character limit
+    if len(content) > 2000:
+        # Define all static text elements
+        header = f"### 🙏 Thank you for your feedback!\n\n**You said:**\n> {message}\n\n"
+        interp_header = "**Here's how the GM understood your feedback:**\n> "
+        footer = "\n\nDoes this interpretation seem correct?\n*(The GM's interpretation was truncated to fit.)*"
+        
+        # Calculate the maximum possible length for the interpretation text
+        max_interp_len = 2000 - (len(header) + len(interp_header) + len(footer))
+
+        # Ensure max_interp_len is not negative
+        if max_interp_len < 0:
+            max_interp_len = 0
+            
+        truncated_interpretation = interpretation[:max_interp_len] + "..."
+        
+        content = f"{header}{interp_header}{truncated_interpretation}{footer}"
+    
+    await interaction.followup.send(content, view=view, ephemeral=True)
+
 
 def run_terminal_mode():
     """Runs the bot in an interactive terminal loop."""
