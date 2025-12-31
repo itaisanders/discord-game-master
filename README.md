@@ -244,7 +244,7 @@ When real life calls, players can mark themselves as Away without pausing the ga
 For deeper insight into the bot's operation and development:
 
 - **[AGENTS.md](./AGENTS.md)**: The **Architectural Source of Truth**. Contains logic patterns, domain constraints, and development protocols for AI agents.
-- **[roadmap.md](./roadmap.md)**: The **Project Vision**. Outlines the "North Star" and strategic "vibe-coding" pillars.
+- **[ROADMAP.md](./ROADMAP.md)**: The **Project Vision**. Outlines the "North Star" and strategic "vibe-coding" pillars.
 
 ---
 

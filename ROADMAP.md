@@ -50,7 +50,10 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - [x] Persistent .ledger Memory (State)
 - [x] **True Randomness**: Move dice rolling from AI to Python code.
 - [x] **Native Slash Commands**: Implement all user available commands as slash commands.
-- [ ] **Output Polish**: Fix character limit and formatting faults in generated text.
+- [x] **Modularize the code**: Refactor the code into modules.
+- [ ] **Couple Personas to Modules**: Distribute the personas .md files from the personas folder into their appropriate modules folders
+    - Change modules structure if needed.
+- [ ] **Output Polish**: Force bot output to be formatted to fit character limit, handle character limit and formatting faults gracefully instead of breaking the output into multiple messages.
 - [ ] **Modular Provider (Alpha)**: Initial support for configurable model backends (Ollama/Custom).
 
 ### 🟡 Phase 2: expansion
@@ -59,10 +62,14 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - [ ] **Stars and Wishes**: Implement a player feedback system.
     - `/stars [message]`: Players highlight something they enjoyed.
     - `/wishes [message]`: Players suggest something they'd like to see in the future.
-    - Implicit Feedback: The AI will be instructed to analyze player messages for sentiment and content that can be interpreted as a "star" or a "wish".
-- [ ] **Table State Machine**: Implement OOC vs IC state management to prevent meta-bleed.
-- [ ] **Dedicated Player Ledger**: Refactor the current `party.ledger` mapping into a dedicated `players.ledger` to centralize User ID, username, and character name associations, making it more robust and easier to manage.
+    - Implicit Feedback: The AI will be instructed to analyze player messages for sentiment and content that can be interpreted as a "star" or a "wish". If the AI deems the feedback to be valid, it will be added to the feedback database via the feedback protocol.
+- [ ] **Table State Machine**: Implement session phase and OOC vs IC state management to prevent meta-bleed.
+- [ ] **Dedicated Player Ledger**: Refactor the current players mapping in `party.ledger` into a dedicated `players.ledger` to centralize User ID, username, and character name associations, making it more robust and easier to manage.
+    - `/party`: List all players in the campaign along with their characters and their current status (ephemeral).
 - [ ] **Vocal Summaries**: Audio/text session recaps since the last logout.
+    - `/summary`: Audio/text session recaps since the player's last message. (ephemeral)
+    - `/summary [my last message|session|all]`: Audio/text session recaps since the player's last message, since the beginning of the current session or the entire campaign, respectively. (ephemeral)
+    - when the session ends, publish a public summary of the session.
 - [ ] **Atmosphere 2.0**: Refined visual generation styles and ambient task suggestions.
 
 ### 🔴 Phase 3: Mastery
