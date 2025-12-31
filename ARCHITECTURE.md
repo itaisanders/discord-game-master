@@ -75,9 +75,14 @@ The system operates on a cyclical flow:
 6.  **Output**: Final formatted message sent to Discord.
 
 ### Directory Structure
-*   `bot.py`: Entry point and event orchestration.
-*   `dice.py`: Logic for RNG and notation parsing.
-*   `away.py`: State machine for player absence.
+*   `src/`: Application source code.
+    *   `src/main.py`: Entry point and command orchestration.
+    *   `src/core/`: Application infrastructure (Config, Clients).
+    *   `src/modules/`: Feature logic.
+        *   `src/modules/dice/`: RNG and rolling logic.
+        *   `src/modules/presence/`: Away mode state machine.
+        *   `src/modules/memory/`: Ledger I/O and interaction logic.
+        *   `src/modules/narrative/`: AI parsing and Protocol handling.
 *   `personas/`: System instructions (.md).
 *   `knowledge/`: Ingested rulebooks (.md).
 *   `memory/`: Campaign state (.ledger).

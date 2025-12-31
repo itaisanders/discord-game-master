@@ -140,7 +140,7 @@ For local testing, you can run the bot directly. Note that closing the terminal 
 #### Discord Mode (Live)
 Run the bot to start listening to your Discord channel:
 ```bash
-python3 bot.py
+python3 src/main.py
 ```
 *   **Interaction**: The bot only responds in the channel specified by `TARGET_CHANNEL_ID`.
 *   **Commands**: All player interactions are now handled exclusively via native Discord Slash Commands (e.g., `/roll`, `/sheet`, `/help`).
@@ -148,7 +148,7 @@ python3 bot.py
 #### Terminal Mode (Testing)
 Test the GM persona and logic directly in your console without sending messages to Discord:
 ```bash
-python3 bot.py --terminal
+python3 src/main.py --terminal
 ```
 *   You act as `User [@Terminal]`.
 *   Great for testing prompts, rules knowledge, and persona consistency.
@@ -218,7 +218,8 @@ When real life calls, players can mark themselves as Away without pausing the ga
 
 ## 🧩 Project Structure
 
-*   `bot.py`: Main application logic (Discord client + Terminal loop).
+*   `src/main.py`: Entry point and event orchestration.
+*   `src/modules/`: Feature logic (Dice, Memory, Presence, Narrative).
 *   `manage.sh`: Management script for starting/stopping the bot as a background process.
 *   `scripts/index_knowledge.py`: Utility to scan `pdf/` and update the RAG store.
 *   `scripts/ingest_rpg_book.py`: Local high-fidelity RPG book transcription tool.

@@ -85,7 +85,27 @@ Structure complex data for display.
     3.  Bot asks User to Confirm/Cancel.
     4.  If Confirmed, written to feedback ledger.
 
-## 3. Domain Constraints
+## 3. Slash Command Registry
+
+The bot implements the following native Discord Slash Commands:
+
+| Command | Arguments | Visibility | Description |
+| :--- | :--- | :--- | :--- |
+| `/roll` | `[dice]` | Public | Roll dice or execute a pending GM-requested roll. |
+| `/help` | None | Ephemeral | Shows the full list of available commands and descriptions. |
+| `/sheet` | `[user]` | Ephemeral | Displays a character sheet from the `party.ledger`. |
+| `/ledger` | None | Ephemeral | Shows the master campaign ledger (or sends as file). |
+| `/away` | `mode` | Public | Set status to `Auto-Pilot`, `Off-Screen`, or `Narrative Exit`. |
+| `/back` | None | Public | Return from away; triggers private catch-up summary. |
+| `/ooc` | `message` | Public | Send an explicit out-of-character message to the channel. |
+| `/visual` | `[prompt]` | Public | Injects a system request for an atmospheric image. |
+| `/rewind` | `direction` | Public | Undoes the last GM narrative and suggests a new path. |
+| `/x` | `[reason]` | Public | Safety tool; stops scene, rewinds facts, and pivots. |
+| `/stars` | `message` | Ephemeral | Record something you enjoyed (requires confirmation). |
+| `/wishes` | `message` | Ephemeral | Record something you want to see (requires confirmation). |
+| `/reset_memory` | None | Ephemeral | **Admin Only**: Wipes all ledgers and rebuilds from history. |
+
+## 4. Domain Constraints
 
 ### Discord
 *   **Message Limit**: 2000 chars. Bot uses `smart_chunk` to split long messages ~1900 chars without breaking Markdown.

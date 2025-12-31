@@ -2,7 +2,7 @@
 
 # A simple management script for the Discord RPG Bot
 
-BOT_COMMAND="python3 src/main.py"
+BOT_COMMAND="python3 bot.py"
 PID_FILE="bot.pid"
 LOG_FILE="bot.log"
 
