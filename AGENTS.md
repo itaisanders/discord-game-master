@@ -48,7 +48,8 @@ Specific design documentation for sub-modules:
 *   [Dice Module](./src/modules/dice/DESIGN.md)
 *   [Presence/Away Module](./src/modules/presence/DESIGN.md)
 *   [Narrative Module](./src/modules/narrative/DESIGN.md)
-*   [Scripts/Ingestion Design](./scripts/DESIGN.md)
+*   [Ingestion Module](./src/modules/ingestion/DESIGN.md)
+*   [Scripts/Maintenance](./scripts/DESIGN.md)
 
 ---
 **This document ensures all Agents operate with the same context and standards. When in doubt, check ARCHITECTURE.md.**

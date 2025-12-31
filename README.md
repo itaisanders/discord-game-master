@@ -97,7 +97,7 @@ pip install -U "pymupdf4llm[ocr,layout]"
 
 ### 2. Run Ingestion
 ```bash
-python scripts/ingest_rpg_book.py pdf/your_book.pdf
+python src/modules/ingestion/ingest_rpg_book.py pdf/your_book.pdf
 ```
 *   **Logic**: It performs high-fidelity layout analysis using `pymupdf4llm` to preserve tables, lists, and mechanical stats.
 *   **Output**: Saves a `.md` file to the `knowledge/` directory which the bot loads automatically on startup.
@@ -230,7 +230,8 @@ When real life calls, players can mark themselves as Away without pausing the ga
 *   `src/modules/`: Feature logic (Dice, Memory, Presence, Narrative).
 *   `manage.sh`: Management script for starting/stopping the bot as a background process.
 *   `scripts/index_knowledge.py`: Utility to scan `pdf/` and update the RAG store.
-*   `scripts/ingest_rpg_book.py`: Local high-fidelity RPG book transcription tool.
+*   `src/modules/ingestion/`: Tools for PDF-to-Markdown knowledge ingestion.
+*   `scripts/index_knowledge.py`: Utility to scan `pdf/` and update the RAG store.
 *   `scripts/check_env.py`: Environment validation utility.
 *   `personas/gm_persona.md`: The "System Instructions" defining the GM's behavior and rules.
 *   `pdf/`: Directory for your game rulebooks.
