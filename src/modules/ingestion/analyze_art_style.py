@@ -11,7 +11,7 @@ from google.genai import types
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-lite")
-PERSONA_PATH = "personas/art_analyzer_persona.md"
+AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-lite")
 OUTPUT_DIR = "knowledge"
 
 if not GEMINI_API_KEY:
@@ -43,9 +43,11 @@ def upload_to_gemini(file_path: pathlib.Path):
     return f_obj
 
 def load_persona():
-    if os.path.exists(PERSONA_PATH):
-        with open(PERSONA_PATH, "r") as f:
-            return f.read().strip()
+    current_dir = pathlib.Path(__file__).parent
+    persona_path = current_dir / "art_analyzer_persona.md"
+    
+    if persona_path.exists():
+        return persona_path.read_text(encoding="utf-8").strip()
     return "Analyze the visual style of the provided PDF and create a styleguide."
 
 def run_analysis(pdf_path_str):

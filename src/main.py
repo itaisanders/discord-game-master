@@ -13,14 +13,13 @@ from google.genai import types
 # Add the project root to sys.path so we can import src modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.core.config import validate_config, DISCORD_TOKEN, AI_MODEL, TARGET_CHANNEL_ID, PERSONA_FILE
+from src.core.config import validate_config, DISCORD_TOKEN, AI_MODEL, TARGET_CHANNEL_ID
 from src.core.client import client_discord, tree, client_genai
 
 # Import Modules
 from src.modules.dice.rolling import roll
 from src.modules.presence.manager import AwayManager
 from src.modules.memory.service import (
-    load_full_context, 
     update_ledgers_logic, 
     reverse_ledgers_logic, 
     load_memory, 
@@ -28,13 +27,16 @@ from src.modules.memory.service import (
     fetch_character_sheet,
     get_feedback_interpretation,
     record_feedback,
-    save_ledger_files
+    save_ledger_files,
+    rebuild_memory_from_history
 )
 from src.modules.narrative.parser import (
     process_response_formatting, 
     pending_rolls, 
     filter_away_mentions
 )
+from src.modules.narrative.loader import load_system_instruction
+from src.modules.commands.registry import get_help_text
 
 from src.core.views import ConfirmView, FeedbackConfirmView
 
@@ -59,7 +61,7 @@ async def on_ready():
 
     # Load Context
     print("🧠 Loading Campaign Context...")
-    full_context = load_full_context()
+    full_context = load_system_instruction()
     print(f"✨ System Instruction Loaded ({len(full_context)} chars).")
 
 @client_discord.event
@@ -81,7 +83,7 @@ async def on_message(message):
 
     async with message.channel.typing():
         try:
-            full_context = load_full_context()
+            full_context = load_system_instruction()
             ledger_content = load_memory()
             
             history = []
@@ -165,6 +167,10 @@ async def sheet_command(interaction: discord.Interaction, user: Optional[discord
 @tree.command(name="ledger", description="View master ledger.")
 async def ledger_command(interaction: discord.Interaction):
     content = load_memory()
+    if not content.strip():
+        await interaction.response.send_message("The campaign ledger is currently empty.", ephemeral=True)
+        return
+
     if len(content) > 1900:
         f = io.BytesIO(content.encode('utf-8'))
         await interaction.response.send_message("Ledger file:", file=discord.File(f, "ledger.md"), ephemeral=True)
@@ -173,10 +179,7 @@ async def ledger_command(interaction: discord.Interaction):
 
 @tree.command(name="help", description="Shows a list of all available commands.")
 async def help_command(interaction: discord.Interaction):
-    help_text = "Could not find the help file."
-    help_file_path = pathlib.Path("personas/help_text.md")
-    if help_file_path.exists():
-        help_text = help_file_path.read_text(encoding="utf-8")
+    help_text = get_help_text()
     embed = discord.Embed(title="📜 Command List", description=help_text, color=discord.Color.blue())
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -267,17 +270,8 @@ async def reset_memory_command(interaction: discord.Interaction):
         history_messages.reverse()
         history_text = "\n".join([f"{m.author.name}: {m.content}" for m in history_messages])
         
-        architect_persona_path = pathlib.Path("personas/memory_architect_persona.md")
-        persona_content = architect_persona_path.read_text(encoding="utf-8")
-        
-        response = await client_genai.aio.models.generate_content(
-            model=AI_MODEL,
-            contents=f"# HISTORY\n{history_text}\n\nBuild fresh ledgers.",
-            config=types.GenerateContentConfig(system_instruction=persona_content, temperature=0.1)
-        )
-        if response.text:
-            count = save_ledger_files(response.text)
-            await interaction.channel.send(f"✅ Memory Rebuilt ({count} files).")
+        count = await rebuild_memory_from_history(history_text)
+        await interaction.channel.send(f"✅ Memory Rebuilt ({count} files).")
     else:
         await interaction.edit_original_response(content="Cancelled.", view=None)
 
@@ -289,14 +283,14 @@ async def reset_memory_command(interaction: discord.Interaction):
 def run_terminal_mode():
     """Runs the bot in an interactive terminal loop."""
     print(f"🎮 Terminal Mode: {AI_MODEL}")
-    print(f"📖 Persona: {PERSONA_FILE}")
+    # print(f"📖 Persona: {PERSONA_FILE}") # Deprecated
     print("--------------------------------------------------")
     print("Type your message to interact. Type 'exit' to quit.")
     print("--------------------------------------------------")
 
     local_history = []
     # Load context once
-    full_instruction = load_full_context()
+    full_instruction = load_system_instruction()
     
     # Standard safety settings for terminal
     safety_settings = [

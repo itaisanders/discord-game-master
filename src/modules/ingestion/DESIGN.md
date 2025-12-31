@@ -19,7 +19,7 @@ The `ingestion` module handles the pipeline for converting raw high-fidelity rul
 *   **Purpose**: Scans PDFs to generate textual styleguides used for creating atmospheric visuals.
 *   **Input**: `pdf/*.pdf` or `active upload`
 *   **Output**: `knowledge/*.style` (text file)
-*   **Persona**: Uses `personas/art_analyzer_persona.md` to interpret visual elements.
+*   **Persona**: Uses `art_analyzer_persona.md` (relative to the module) to interpret visual elements.
 
 ## Data Structures
 *   **`knowledge/*.md`**: The final output format.

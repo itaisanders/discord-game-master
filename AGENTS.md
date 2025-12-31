@@ -43,7 +43,7 @@ Before starting work, read:
 Specific design documentation for sub-modules:
 *   [Main Entry Point & Architecture](./src/DESIGN.md)
 *   [Core Infrastructure](./src/core/DESIGN.md)
-*   [Personas Design](./personas/DESIGN.md)
+*   [Commands Module](./src/modules/commands/DESIGN.md)
 *   [Memory/Ledger Design](./src/modules/memory/DESIGN.md)
 *   [Dice Module](./src/modules/dice/DESIGN.md)
 *   [Presence/Away Module](./src/modules/presence/DESIGN.md)

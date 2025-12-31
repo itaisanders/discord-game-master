@@ -74,9 +74,9 @@ Structure complex data for display.
 
 ### Knowledge Ingestion (Context-Full)
 *   **Input**: PDF Rulebooks in `pdf/`.
-*   **Process**: Converted to Markdown via `scripts/ingest_rpg_book.py` using `pymupdf4llm`.
+*   **Process**: Converted to Markdown via `src/modules/ingestion/ingest_rpg_book.py` using `pymupdf4llm`.
 *   **Storage**: `.md` files in `knowledge/`.
-*   **Loading**: All files in `knowledge/` are appended to the System Instruction at startup.
+*   **Loading**: All files in `knowledge/` are aggregated with the module-specific persona via `src/modules/narrative/loader.py` and injected into the System Instruction at startup.
 
 ### Interactive Feedback (`/stars`, `/wishes`)
 *   **Flow**:

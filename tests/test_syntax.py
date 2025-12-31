@@ -20,9 +20,9 @@ def test_imports_of_all_modules():
         import src.modules.narrative.parser
         
         # Scripts
-        import scripts.analyze_art_style
+        import src.modules.ingestion.analyze_art_style
         import scripts.check_env
-        import scripts.ingest_rpg_book
+        import src.modules.ingestion.ingest_rpg_book
         
     except ImportError as e:
         pytest.fail(f"Import failed: {e}")

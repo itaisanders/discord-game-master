@@ -7,6 +7,16 @@ The `narrative` module handles the "Protocol Parsing" layer. It interprets raw t
 
 ## Public Interface
 
+### `gm_persona.md`
+The "Soul" of the GM. This markdown file contains the System Instructions that define the AI's personality, rules, and formatting protocols.
+
+### `loader.py`
+Handles loading the system instruction.
+
+#### Functions
+- **`load_system_instruction() -> str`**
+    - **Description**: Loads `gm_persona.md` (relative to the module) and injects any `knowledge/*.md` files found in the project root.
+
 ### `parser.py`
 The main processor for AI text.
 

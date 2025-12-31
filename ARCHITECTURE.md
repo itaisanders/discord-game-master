@@ -38,11 +38,13 @@ A primary pattern for complex interactions. Instead of code directly manipulatin
 *   **Example**: `/visual "dark alley"` -> Injects `[System Event: Player requested visual...]`.
 *   **Outcome**: The AI interprets the request within the fiction and generates the appropriate Protocol Block response, ensuring narrative consistency.
 
-### Multi-Persona Architecture
-The bot avoids a single monolithic system instruction. Instead, it dynamically loads specialized "Personas" based on the task:
-*   **Game Master (`gm_persona.md`)**: The primary narrator and rule arbiter.
-*   **Memory Architect (`memory_architect_persona.md`)**: Specialized in summarizing events and updating `.ledger` files.
-*   **Art Analyzer (`art_analyzer_persona.md`)**: Extracts style guidelines from rulebooks.
+### Encapsulated Multi-Persona Architecture
+The bot avoids a single monolithic system instruction. Instead, it utilizes a **Modular Persona** system where each feature module owns its own system instructions. This ensures strong encapsulation and allows for specialized AI behaviors:
+*   **Game Master (`src/modules/narrative/gm_persona.md`)**: The primary narrator and rule arbiter.
+*   **Memory Architect (`src/modules/memory/architect_persona.md`)**: Specialized in summarizing events and updating `.ledger` files.
+*   **Art Analyzer (`src/modules/ingestion/art_analyzer_persona.md`)**: Extracts style guidelines from rulebooks.
+
+Each module is responsible for loading its own persona files using relative paths, removing reliance on global configuration files for internal AI logic.
 
 ### Persistent Memory System (The Ledger)
 State is not stored in a database but in **human-readable `.ledger` text files**.
@@ -81,9 +83,10 @@ The system operates on a cyclical flow:
     *   `src/modules/`: Feature logic.
         *   `src/modules/dice/`: RNG and rolling logic.
         *   `src/modules/presence/`: Away mode state machine.
-        *   `src/modules/memory/`: Ledger I/O and interaction logic.
-        *   `src/modules/narrative/`: AI parsing and Protocol handling.
-*   `personas/`: System instructions (.md).
+        *   `src/modules/memory/`: Ledger I/O, interaction logic, and the **Memory Architect** persona.
+        *   `src/modules/narrative/`: AI parsing, Protocol handling, and the **GM** persona.
+        *   `src/modules/commands/`: Slash command registry and help documentation.
+        *   `src/modules/ingestion/`: Tools for rulebook ingestion and art style analysis.
 *   `knowledge/`: Ingested rulebooks (.md).
 *   `memory/`: Campaign state (.ledger).
-*   `scripts/`: Maintenance and ingestion tools.
+*   `scripts/`: Maintenance and utility scripts.

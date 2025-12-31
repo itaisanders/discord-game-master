@@ -37,7 +37,7 @@ async def test_ooc_command(mock_interaction):
     
     # It should send an ephemeral confirmation
     mock_interaction.response.send_message.assert_called_once_with(
-        "Your OOC message has been sent.", ephemeral=True
+        "Sent.", ephemeral=True
     )
     
     # And then a public, formatted message
@@ -73,7 +73,7 @@ async def test_sheet_command_not_found(mock_interaction):
         await sheet_command.callback(mock_interaction)
         
         mock_interaction.followup.send.assert_called_once_with(
-            "Could not find a character sheet for **TestCharacter**.", ephemeral=True
+            "Sheet for TestCharacter not found.", ephemeral=True
         )
 
 @pytest.mark.asyncio

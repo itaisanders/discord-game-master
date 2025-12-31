@@ -14,25 +14,20 @@ def test_environment_variables(env_vars):
         "DISCORD_TOKEN",
         "GEMINI_API_KEY",
         "TARGET_CHANNEL_ID",
-        "PERSONA_FILE",
-        "AI_MODEL"
     ]
     for var in required_vars:
         assert var in env_vars, f"Missing critical environment variable: {var}"
 
-def test_persona_file_exists(env_vars):
-    """Critical: Ensure the persona file actually exists on disk."""
-    persona_path = env_vars.get("PERSONA_FILE")
-    assert persona_path is not None
-    assert os.path.exists(persona_path), f"Persona file not found at: {persona_path}"
+def test_gm_persona_file_exists():
+    import pathlib
+    gm_persona_path = pathlib.Path("src/modules/narrative/gm_persona.md")
+    assert gm_persona_path.exists(), f"GM Persona file not found at: {gm_persona_path}"
 
 def test_pdf_directory_structure():
     """Critical: Ensure the PDF directory exists (even if empty)."""
     assert os.path.isdir("pdf"), "The 'pdf' directory is missing."
 
-def test_personas_directory_structure():
-    """Critical: Ensure the personas directory exists."""
-    assert os.path.isdir("personas"), "The 'personas' directory is missing."
+
 
 def test_scripts_directory_structure():
     """Critical: Ensure the scripts directory exists."""

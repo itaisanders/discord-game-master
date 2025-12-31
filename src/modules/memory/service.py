@@ -10,45 +10,11 @@ from google.genai import types
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 
-from src.core.config import PERSONA_FILE, AI_MODEL
+from src.core.config import AI_MODEL
 from src.core.client import client_genai
 
 # Load Persona (Dynamic Load)
-def load_full_context():
-    """
-    Loads the base persona and injects any markdown files from ./knowledge.
-    NOTE: This is intentionally placed after global env vars for FULL_SYSTEM_INSTRUCTION.
-    """
-    context_parts = []
 
-    # 1. Load Base Persona
-    if os.path.exists(PERSONA_FILE):
-        with open(PERSONA_FILE, "r") as f:
-            context_parts.append(f.read().strip())
-        print(f"✅ Loaded base persona: {PERSONA_FILE}")
-    else:
-        context_parts.append("You are an amazing Game Master.")
-        print(f"⚠️ {PERSONA_FILE} not found, using default instruction.")
-
-    # 2. Inject Knowledge Files (.md)
-    knowledge_dir = pathlib.Path("./knowledge")
-    injected_files = []
-    
-    if knowledge_dir.exists():
-        for md_file in knowledge_dir.glob("*.md"):
-            try:
-                content = md_file.read_text(encoding="utf-8")
-                context_parts.append(f"\n\n--- FILE: {md_file.name} ---\n\n{content}")
-                injected_files.append(md_file.name)
-            except Exception as e:
-                print(f"❌ Failed to load {md_file.name}: {e}")
-
-    if injected_files:
-        print(f"📚 Injected Knowledge: {', '.join(injected_files)}")
-    else:
-        print("ℹ️ No extra markdown knowledge found in ./knowledge")
-
-    return "\n".join(context_parts)
 
 def load_memory():
     """Loads all .ledger files from ./memory."""
@@ -94,7 +60,10 @@ async def update_ledgers_logic(update_facts):
     """Uses the Memory Architect to update physical ledger files asynchronously."""
     try:
         current_memory = load_memory()
-        architect_persona_path = pathlib.Path("personas/memory_architect_persona.md")
+        # Relative path to architect persona
+        current_dir = pathlib.Path(__file__).parent
+        architect_persona_path = current_dir / "architect_persona.md"
+        
         if not architect_persona_path.exists():
             print("⚠️ Memory Architect persona missing!")
             return
@@ -121,7 +90,10 @@ async def reverse_ledgers_logic(facts_to_reverse):
     """Uses the Memory Architect to reverse facts in physical ledger files."""
     try:
         current_memory = load_memory()
-        architect_persona_path = pathlib.Path("personas/memory_architect_persona.md")
+        # Relative path to architect persona
+        current_dir = pathlib.Path(__file__).parent
+        architect_persona_path = current_dir / "architect_persona.md"
+
         if not architect_persona_path.exists():
             print("⚠️ Memory Architect persona missing!")
             return
@@ -205,14 +177,11 @@ async def fetch_character_sheet(character_name: str) -> Optional[str]:
 async def get_feedback_interpretation(feedback_type: str, message: str) -> str:
     """Uses the GM persona to interpret player feedback."""
     try:
-        from src.core.config import PERSONA_FILE, AI_MODEL
+        from src.core.config import AI_MODEL
         from src.core.client import client_genai
+        from src.modules.narrative.loader import load_system_instruction
         
-        gm_persona_path = pathlib.Path(PERSONA_FILE)
-        if not gm_persona_path.exists():
-            return "Error: GM Persona file not found."
-        
-        persona_content = gm_persona_path.read_text(encoding="utf-8")
+        persona_content = load_system_instruction()
         
         prompt = (
             f"A player has provided feedback. As the GM, your task is to understand their input and explain what you will do with it.\n\n"
@@ -254,3 +223,28 @@ async def record_feedback(feedback_type: str, user: str, message: str, interpret
             f.write(entry)
     except Exception as e:
         print(f"❌ Failed to write to feedback.ledger: {e}")
+
+async def rebuild_memory_from_history(history_text: str) -> int:
+    """
+    Rebuilds the ledgers based on the provided history text using the Memory Architect.
+    """
+    try:
+        current_dir = pathlib.Path(__file__).parent
+        architect_persona_path = current_dir / "architect_persona.md"
+        
+        if not architect_persona_path.exists():
+            print("⚠️ Memory Architect persona missing!")
+            return 0
+            
+        persona_content = architect_persona_path.read_text(encoding="utf-8")
+        
+        response = await client_genai.aio.models.generate_content(
+            model=AI_MODEL,
+            contents=f"# HISTORY\n{history_text}\n\nBuild fresh ledgers.",
+            config=types.GenerateContentConfig(system_instruction=persona_content, temperature=0.1)
+        )
+        if response.text:
+            return save_ledger_files(response.text)
+    except Exception as e:
+        print(f"❌ Memory Rebuild Error: {e}")
+    return 0

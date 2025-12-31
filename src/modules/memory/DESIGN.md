@@ -9,13 +9,13 @@ The `memory` module handles reading and updating the campaign's persistent state
 Stateless functions for file I/O and AI interactions regarding memory.
 
 #### Context Loading
-- **`load_full_context() -> str`**
-    - **Description**: Aggregates the `PERSONA_FILE` and all `.md` files in `knowledge/`.
-    - **Returns**: A single compiled string containing the System Instruction.
-
 - **`load_memory() -> str`**
     - **Description**: Reads all `*.ledger` files in `memory/`.
     - **Returns**: A string block formatted with `--- CAMPAIGN LEDGER: name ---` headers.
+
+#### Maintenance
+- **`rebuild_memory_from_history(history_text: str) -> int`**
+    - **Description**: Uses `architect_persona.md` to rebuild all ledgers based on chat history.
 
 #### Ledger Manipulation
 - **`save_ledger_files(response_text: str) -> int`**

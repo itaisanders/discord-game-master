@@ -8,7 +8,7 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 TARGET_CHANNEL_ID_STR = os.getenv("TARGET_CHANNEL_ID")
-PERSONA_FILE = os.getenv("PERSONA_FILE", "personas/gm_persona.md") # Default if not set
+
 AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-lite")
 
 TARGET_CHANNEL_ID = 0

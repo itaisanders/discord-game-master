@@ -54,9 +54,20 @@ async def test_update_ledgers_logic(mock_save, mock_load, mock_gen, temp_memory_
     mock_gen.return_value = mock_res
     
     # We need to make sure the persona exists for the test
-    with patch("src.modules.memory.service.pathlib.Path") as mock_path:
-        mock_path.return_value.exists.return_value = True
-        mock_path.return_value.read_text.return_value = "Persona content"
+    with patch("src.modules.memory.service.pathlib.Path") as mock_path_class:
+        # Create a mock for the persona file path
+        mock_persona_path = MagicMock()
+        mock_persona_path.exists.return_value = True
+        mock_persona_path.read_text.return_value = "Persona content"
+        
+        # Configure Path(__file__).parent / "architect_persona.md"
+        # Path() returns mock_path_instance
+        # mock_path_instance.parent returns mock_parent
+        # mock_parent / "architect_persona.md" returns mock_persona_path
+        mock_path_instance = MagicMock()
+        mock_path_class.return_value = mock_path_instance
+        mock_path_instance.parent.__truediv__.return_value = mock_persona_path
+        
         await update_ledgers_logic("Fact to add")
     
     mock_gen.assert_called_once()
