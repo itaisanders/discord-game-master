@@ -77,4 +77,4 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 2. **Respect the Dice**: The AI never fudges; rolls are handled by code to ensure raw consequence.
 3. **Show, Don't Just Tell**: Descriptions should favor atmosphere over clinical exposition.
 
-> Refer to [AGENTS.md](./AGENTS.md) for technical implementation patterns.
+> Refer to [AGENTS.md](./AGENTS.md) for agent guidelines.

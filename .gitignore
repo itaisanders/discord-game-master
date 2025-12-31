@@ -19,6 +19,7 @@ knowledge/*
 
 memory/*
 !memory/.gitkeep
+!memory/DESIGN.md
 
 # OS specific
 .DS_Store
