@@ -1,7 +1,9 @@
 
 import pytest
 import re
-from bot import process_response_formatting, render_table_as_ascii
+import pytest
+import re
+from src.modules.narrative.parser import process_response_formatting, render_table_as_ascii
 
 def test_process_response_formatting_data_table():
     """Test that DATA_TABLE blocks are correctly identified and processed."""
@@ -119,7 +121,7 @@ What happens next?
 def test_process_response_formatting_roll_call():
     """Test that ROLL_CALL blocks are correctly intercepted and parsed."""
     # Reset pending_rolls for test isolation
-    from bot import pending_rolls
+    from src.modules.narrative.parser import pending_rolls
     pending_rolls.clear()
     
     sample_text = """

@@ -3,7 +3,7 @@ import pytest
 import pathlib
 import os
 from unittest.mock import MagicMock, patch, AsyncMock
-from bot import save_ledger_files, update_ledgers_logic
+from src.modules.memory.service import save_ledger_files, update_ledgers_logic
 
 @pytest.fixture
 def temp_memory_dir(tmp_path):
@@ -25,7 +25,7 @@ Fact 1
 Fact 2
 ```
 """
-    with patch("bot.pathlib.Path") as mock_path_class:
+    with patch("src.modules.memory.service.pathlib.Path") as mock_path_class:
          # Mocking Path("./memory") / filename
          mock_dir = MagicMock()
          mock_path_class.return_value = mock_dir
@@ -41,9 +41,9 @@ Fact 2
          assert mock_file.write_text.called
 
 @pytest.mark.asyncio
-@patch("bot.client_genai.aio.models.generate_content", new_callable=AsyncMock)
-@patch("bot.load_memory")
-@patch("bot.save_ledger_files")
+@patch("src.core.client.client_genai.aio.models.generate_content", new_callable=AsyncMock)
+@patch("src.modules.memory.service.load_memory")
+@patch("src.modules.memory.service.save_ledger_files")
 async def test_update_ledgers_logic(mock_save, mock_load, mock_gen, temp_memory_dir):
     """Test the coordination of update_ledgers_logic."""
     mock_load.return_value = "Existing content"
@@ -54,7 +54,7 @@ async def test_update_ledgers_logic(mock_save, mock_load, mock_gen, temp_memory_
     mock_gen.return_value = mock_res
     
     # We need to make sure the persona exists for the test
-    with patch("bot.pathlib.Path") as mock_path:
+    with patch("src.modules.memory.service.pathlib.Path") as mock_path:
         mock_path.return_value.exists.return_value = True
         mock_path.return_value.read_text.return_value = "Persona content"
         await update_ledgers_logic("Fact to add")
@@ -64,7 +64,7 @@ async def test_update_ledgers_logic(mock_save, mock_load, mock_gen, temp_memory_
 
 def test_save_ledger_files_extension_handling(temp_memory_dir):
     """Ensure .ledger extension is added if missing."""
-    with patch("bot.pathlib.Path") as mock_path_class:
+    with patch("src.modules.memory.service.pathlib.Path") as mock_path_class:
         mock_dir = MagicMock()
         mock_path_class.return_value = mock_dir
         mock_file = MagicMock()

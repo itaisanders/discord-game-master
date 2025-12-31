@@ -2,7 +2,7 @@ import os
 import json
 import time
 import pytest
-from away import AwayManager
+from src.modules.presence.manager import AwayManager
 
 @pytest.fixture
 def away_manager(tmp_path):

@@ -93,8 +93,16 @@ case "$1" in
         echo "Displaying last 20 lines of the log file ($LOG_FILE):"
         tail -n 20 "$LOG_FILE"
         ;;
+    test)
+        echo "Running tests..."
+        pytest
+        ;;
+    terminal)
+        echo "Starting Terminal Mode..."
+        python3 src/main.py --terminal
+        ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status|log}"
+        echo "Usage: $0 {start|stop|restart|status|log|test|terminal}"
         exit 1
         ;;
 esac

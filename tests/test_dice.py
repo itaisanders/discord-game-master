@@ -6,7 +6,7 @@ Tests dice notation parsing, validation, randomness, and error handling.
 
 import pytest
 import re
-from dice import roll, DiceResult
+from src.modules.dice.rolling import roll, DiceResult
 
 
 class TestBasicNotation:

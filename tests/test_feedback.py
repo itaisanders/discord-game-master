@@ -3,8 +3,10 @@ from unittest.mock import AsyncMock, patch, MagicMock
 import discord
 import unittest
 
-# Since the commands are in bot.py, we need to import them
-from bot import stars_command, wishes_command, FeedbackConfirmView, record_feedback
+# Since the commands are in src.main/views, we need to import them
+from src.main import stars_command, wishes_command
+from src.core.views import FeedbackConfirmView
+from src.modules.memory.service import record_feedback
 
 @pytest.fixture
 def mock_interaction():
@@ -26,8 +28,8 @@ async def test_stars_command_confirm_flow(mock_interaction):
     test_interpretation = "I understand you liked the epic combat encounter."
 
     # We patch the two external-facing functions: the AI call and the file write.
-    with patch("bot.get_feedback_interpretation", new_callable=AsyncMock, return_value=test_interpretation) as mock_get_interp, \
-         patch("bot.record_feedback", new_callable=AsyncMock) as mock_record_feedback:
+    with patch("src.main.get_feedback_interpretation", new_callable=AsyncMock, return_value=test_interpretation) as mock_get_interp, \
+         patch("src.main.record_feedback", new_callable=AsyncMock) as mock_record_feedback:
 
         # 1. Execute the slash command
         await stars_command.callback(mock_interaction, message=test_message)
@@ -53,6 +55,7 @@ async def test_stars_command_confirm_flow(mock_interaction):
         
         # The button callback needs an interaction object to operate on
         button_interaction = AsyncMock(spec=discord.Interaction)
+        button_interaction.user = mock_interaction.user
         button_interaction.response = AsyncMock(spec=discord.InteractionResponse)
         
         await confirm_button.callback(button_interaction)
@@ -81,8 +84,8 @@ async def test_wishes_command_cancel_flow(mock_interaction):
     test_message = "I wish we could explore the northern mountains."
     test_interpretation = "I understand you want more exploration-focused adventures."
 
-    with patch("bot.get_feedback_interpretation", new_callable=AsyncMock, return_value=test_interpretation) as mock_get_interp, \
-         patch("bot.record_feedback", new_callable=AsyncMock) as mock_record_feedback:
+    with patch("src.main.get_feedback_interpretation", new_callable=AsyncMock, return_value=test_interpretation) as mock_get_interp, \
+         patch("src.main.record_feedback", new_callable=AsyncMock) as mock_record_feedback:
 
         # 1. Execute the slash command
         await wishes_command.callback(mock_interaction, message=test_message)

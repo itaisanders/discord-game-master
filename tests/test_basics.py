@@ -13,7 +13,6 @@ def test_environment_variables(env_vars):
     required_vars = [
         "DISCORD_TOKEN",
         "GEMINI_API_KEY",
-        "STORE_ID",
         "TARGET_CHANNEL_ID",
         "PERSONA_FILE",
         "AI_MODEL"

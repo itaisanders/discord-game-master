@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 import discord
-from bot import help_command, sheet_command, ledger_command, ooc_command
+from src.main import help_command, sheet_command, ledger_command, ooc_command
 
 # Since we are testing slash commands, we need to mock the Interaction object
 # and its relevant properties and methods.
@@ -48,7 +48,7 @@ async def test_ooc_command(mock_interaction):
 @pytest.mark.asyncio
 async def test_ledger_command_empty(mock_interaction):
     """Test the /ledger command when the ledger is empty."""
-    with patch("bot.load_memory", return_value=""):
+    with patch("src.main.load_memory", return_value=""):
         await ledger_command.callback(mock_interaction)
         mock_interaction.response.send_message.assert_called_once_with(
             "The campaign ledger is currently empty.", ephemeral=True
@@ -58,7 +58,7 @@ async def test_ledger_command_empty(mock_interaction):
 async def test_ledger_command_with_content(mock_interaction):
     """Test the /ledger command with content."""
     ledger_content = "Fact 1\nFact 2"
-    with patch("bot.load_memory", return_value=ledger_content):
+    with patch("src.main.load_memory", return_value=ledger_content):
         await ledger_command.callback(mock_interaction)
         mock_interaction.response.send_message.assert_called_once_with(
             f"```markdown\n{ledger_content}\n```", ephemeral=True
@@ -67,8 +67,8 @@ async def test_ledger_command_with_content(mock_interaction):
 @pytest.mark.asyncio
 async def test_sheet_command_not_found(mock_interaction):
     """Test /sheet command when no sheet is found for a character."""
-    with patch("bot.get_character_name", return_value="TestCharacter"), \
-         patch("bot.fetch_character_sheet", return_value=None):
+    with patch("src.main.get_character_name", return_value="TestCharacter"), \
+         patch("src.main.fetch_character_sheet", return_value=None):
         
         await sheet_command.callback(mock_interaction)
         
@@ -92,8 +92,8 @@ async def test_sheet_command_found(mock_interaction):
     # The command will wrap this content in a markdown block
     expected_message = f"```markdown\n{sheet_content}\n```"
 
-    with patch("bot.get_character_name", return_value="TestCharacter"), \
-         patch("bot.fetch_character_sheet", return_value=sheet_content):
+    with patch("src.main.get_character_name", return_value="TestCharacter"), \
+         patch("src.main.fetch_character_sheet", return_value=sheet_content):
 
         await sheet_command.callback(mock_interaction)
         

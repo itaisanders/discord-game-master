@@ -131,6 +131,14 @@ This script allows you to run the bot as a persistent background process.
     ```bash
     ./manage.sh log
     ```
+*   **Run tests:**
+    ```bash
+    ./manage.sh test
+    ```
+*   **Run Terminal Mode:**
+    ```bash
+    ./manage.sh terminal
+    ```
 
 ## 🎮 How to Run
 
