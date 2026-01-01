@@ -42,11 +42,15 @@ Updates the preferred voice. Returns `False` if the key is invalid.
 - **Persona**: Uses `src/modules/bard/narrator_persona.md`.
 - **Output**: A dramatic prose script optimized for audio (no markdown, includes stage directions like `[PAUSE]`).
 
-### `AudioPerformer` (src/core/tts_interface.py)
+### `AudioPerformer` (src/core/tts.py)
 
-#### `perform(script: str, voice_id: str) -> io.BytesIO`
+#### `generate_audio(script: str, voice_id: str) -> io.BytesIO`
 - **Input**: The text script and the provider-specific voice ID.
-- **Output**: A byte stream of the generated audio (MP3/WAV).
+- **Output**: A byte stream of the generated audio in **WAV** format (24kHz, 16-bit, Mono).
+- **Implementation Note**: Raw PCM bytes from the API must be wrapped in a RIFF/WAV header using the `wave` module for Discord compatibility.
+
+### File Delivery
+Files sent to Discord must use unique filenames (e.g., `recap_{timestamp}.wav`) to bypass CDN caching of previous broken or stale files.
 
 ## Narrative Persona: The Scriptwriter
 **Location**: `src/modules/bard/narrator_persona.md`

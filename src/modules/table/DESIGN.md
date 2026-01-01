@@ -84,5 +84,9 @@ if current_state == TableState.SESSION_ZERO:
 Regardless of state, messages starting with `((` or `//` should be treated as OOC and ignored by the narrative engine, or handled explicitly if addressed to the bot.
 
 ## Future Expansion (Phase 3)
-- **Implicit Triggers**: LLM detects "That's a wrap!" and suggests `/session end`.
+- **Enhanced Implicit Triggers**: Refine LLM detection of natural session endings and transitions.
 - **State-Specific Personas**: `SESSION_ZERO` uses a different system prompt than `ACTIVE`.
+- **Temporal Tracking**: Track Season and Session numbers within the manager.
+
+## Implicit Protocol
+The system supports the `TABLE_STATE` markdown protocol, allowing the GM to suggest state changes (e.g., to `PAUSED` or `DEBRIEF`) which the players can then confirm via an interactive view.

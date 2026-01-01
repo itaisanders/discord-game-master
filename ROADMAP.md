@@ -80,6 +80,12 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - [ ] **Atmosphere 2.0**: Refined visual generation styles and ambient task suggestions.
 
 ### 🔴 Phase 3: Mastery
+- [ ] **Temporal Intelligence**: Enhance `TableManager` and `Ledger` modules to track and persist Season and Session numbers.
+- [ ] **Automated Chronicles**: Trigger automatic cinematic audio narration for:
+    - **Season Intro**: Welcoming players to a new arc.
+    - **Session Recap**: Narrative catch-up at the start of a session.
+    - **Season Epilogue**: Grand finale summary after a climactic arc.
+- [ ] **Refined Scope Handling**: Deep integration of session/campaign scopes into the Bard's scriptwriting logic.
 - [ ] Multi-Modal World-Building (AI generates maps based on session history)
 - [ ] Faction System (The world moves around the players)
 - [ ] Campaign Archiving (Exporting the campaign as a high-fidelity narrative "booklet")
