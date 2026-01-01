@@ -82,6 +82,16 @@ Structure complex data for display.
 *   **Suppression**: Bot removes `@mentions` for away players in AI output.
 *   **Catch-Up**: Returning players (`/back`) get a summary of missed messages.
 
+### Cinematic Recaps (The Bard)
+*   **Module**: `src/modules/bard/`
+*   **Persona**: `narrator_persona.md` (Optimized for dramatic prose).
+*   **Commands**:
+    *   `/summary`: Generates a text-based chronicle of the session or campaign.
+    *   `/voice`: Configures preferences (infrastructure ready for future Audio enable).
+*   **Constraints**:
+    *   Audio generation is currently disabled due to API limitations.
+    *   Commands require `BardManager` configuration.
+
 ### Knowledge Ingestion (Context-Full)
 *   **Input**: PDF Rulebooks in `pdf/`.
 *   **Process**: Converted to Markdown via `src/modules/ingestion/ingest_rpg_book.py` using `pymupdf4llm`.

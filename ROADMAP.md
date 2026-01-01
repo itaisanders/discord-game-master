@@ -67,20 +67,18 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
     - [x] **Session Zero**: Initial state for world-building and character creation.
     - [x] **States**: `IDLE`, `SESSION_ZERO`, `ACTIVE`, `PAUSED`, `DEBRIEF`.
     - [x] **Commands**: `/session [start|zero|pause|resume|end|close]` to manage flow.
-- [ ] **Cinematic Vocal Recaps**: Narrative-rich, audio-driven storytelling summarizing recent events.
-    - **Goal**: Avoid robotic TTS. Create a "TV-Show Recap" vibe ("Previously, on Spire...").
-    - **Tech**: Dedicated 'Scriptwriter' persona + Modular AI TTS (Gemini/External).
-    - **Voice Customization**: Instance-configurable voice list. Players select the Narrator's voice via slash commands.
-    - **Persistence**: Chosen voice and style settings are saved to the campaign state.
+- [x] **Cinematic Text Recaps**: Narrative-rich storytelling summarizing recent events.
+    - **Goal**: Create a "TV-Show Recap" vibe ("Previously, on Spire...") in text form.
+    - **Tech**: Dedicated 'Scriptwriter' persona.
     - **Commands**:
-        - `/summary [scope]`: Trigger audio generation.
-        - `/voice set [name]`: Change the narrator's voice.
-        - `/voice list`: View available narrator options.
+        - `/summary [scope]`: Trigger text generation.
+        - `/voice` commands preserved for future Audio integration.
 - [ ] **Dedicated Player Ledger**: Refactor the current players mapping in `party.ledger` into a dedicated `players.ledger` to centralize User ID, username, and character name associations, making it more robust and easier to manage.
     - `/party`: List all players in the campaign along with their characters and their current status (ephemeral).
 - [ ] **Atmosphere 2.0**: Refined visual generation styles and ambient task suggestions.
 
 ### 🔴 Phase 3: Mastery
+- [ ] **Cinematic Audio (The Bard 2.0)**: Enable TTS integration for the `/summary` command once API capabilities allow.
 - [ ] Multi-Modal World-Building (AI generates maps based on session history)
 - [ ] Faction System (The world moves around the players)
 - [ ] Campaign Archiving (Exporting the campaign as a high-fidelity narrative "booklet")
