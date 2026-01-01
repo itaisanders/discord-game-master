@@ -1,6 +1,6 @@
 import pathlib
 from google.genai import types
-from src.core.llm import llm_provider
+from src.core.client import llm_provider
 from src.core.config import MODEL_GM
 
 class Scriptwriter:

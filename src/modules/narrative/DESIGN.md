@@ -30,7 +30,7 @@ Handles loading the system instruction.
 The main processor for AI text.
 
 #### Functions
-- **`process_response_formatting(text: str) -> Tuple[str, Optional[str], Optional[str], List[Dict]]`**
+- **`process_response_formatting(text: str) -> Tuple[str, Optional[str], Optional[str], List[Dict], Optional[Dict]]`**
     - **Description**: The master processing pipeline.
         1.  Filters Away Mentions.
         2.  Renders `DATA_TABLE` blocks to ASCII.
@@ -39,7 +39,11 @@ The main processor for AI text.
         5.  Executes `DICE_ROLL` blocks (find-and-replace).
         6.  Intercepts `ROLL_CALL` blocks (queues them).
         7.  Extracts `FEEDBACK_DETECTED` blocks (implicit feedback).
-    - **Returns**: A tuple `(clean_text, memory_facts, visual_prompt, detected_feedback)`.
+        8.  Extracts `TABLE_STATE` blocks (implicit table state change).
+    - **Returns**: A tuple `(clean_text, memory_facts, visual_prompt, detected_feedback, detected_state_change)`.
+
+- **`process_table_state_detection(text: str) -> Tuple[str, Optional[Dict]]`**
+    - **Description**: Extracts `TABLE_STATE` blocks and returns the data (state, reason).
 
 - **`process_feedback_detection(text: str) -> Tuple[str, List[Dict]]`**
     - **Description**: Extracts `FEEDBACK_DETECTED` blocks and returns a list of dictionaries with keys `type`, `user`, and `content`.
