@@ -15,9 +15,10 @@
 ### Technology Stack
 *   **Language**: Python 3.10+
 *   **Interface**: `discord.py` (Async/Slash Commands)
-*   **AI Backend**: `google-genai`
-    *   Text: `gemini-2.0-flash-lite`
-    *   Images: `gemini-2.5-flash-image`
+*   **AI Backend**: Modular Provider System (`src/core/llm.py`)
+    *   **Default**: `google-genai` (Gemini)
+    *   **Extensible**: Supports additional providers (e.g., Ollama).
+    *   **Models**: Configurable per-persona (e.g., `gemini-2.0-flash-lite` for text, `gemini-2.5-flash-image` for visuals).
 *   **Persistence**: Flat-file system (`.ledger` files) for human-readable, reliable state.
 *   **Knowledge Base**: Markdown-based RAG (Direct Ingestion).
 
