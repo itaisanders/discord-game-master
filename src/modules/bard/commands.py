@@ -43,14 +43,28 @@ class BardCommands:
                 ledger_context = load_memory()
                 
                 # 2. Generate Script
-                await interaction.edit_original_response(content="✍️ **The Bard is writing the chronicles...**")
+                await interaction.edit_original_response(content="✍️ **The Bard is writing the script...**")
                 script = await self.scriptwriter.generate_script(history_text, ledger_context, scope=scope)
                 
-                # 3. Present Text (Audio disabled for now)
-                title = "📜 **Session Chronicles**" if scope == "session" else "📜 **The Saga So Far**"
-                await interaction.edit_original_response(
-                    content=f"{title}\n\n>>> {script}"
-                )
+                # 3. Perform Audio
+                try:
+                    await interaction.edit_original_response(content="🎙️ **The Narrator is performing...**")
+                    voice_def = self.bard_manager.get_selected_voice()
+                    audio_data = await self.tts_provider.generate_audio(script, voice_def['provider_id'])
+                    
+                    # 4. Send File
+                    audio_data.seek(0)
+                    discord_file = discord.File(fp=audio_data, filename="recap.wav")
+                    
+                    await interaction.edit_original_response(
+                        content=f"🎭 **Cinematic Narration** (Narrator: {voice_def['name']})\n||{script[:1800]}...||", 
+                        attachments=[discord_file]
+                    )
+                except Exception as tts_error:
+                    print(f"⚠️ Narration Delivery Failed: {tts_error}")
+                    await interaction.edit_original_response(
+                        content=f"📜 **The Bard's voice is hoarse, but the scroll remains.**\n\n**Cinematic Script:**\n>>> {script}"
+                    )
                 
                 self.bard_manager.update_summary_timestamp()
                 

@@ -84,13 +84,12 @@ Structure complex data for display.
 
 ### Cinematic Recaps (The Bard)
 *   **Module**: `src/modules/bard/`
-*   **Persona**: `narrator_persona.md` (Optimized for dramatic prose).
+*   **Persona**: `narrator_persona.md` (Optimized for dramatic audio scripts).
 *   **Commands**:
-    *   `/summary`: Generates a text-based chronicle of the session or campaign.
-    *   `/voice`: Configures preferences (infrastructure ready for future Audio enable).
-*   **Constraints**:
-    *   Audio generation is currently disabled due to API limitations.
-    *   Commands require `BardManager` configuration.
+    *   `/summary`: Generates a dramatic audio chronicle (.wav) + transcript.
+    *   `/voice`: Configures the narrator's voice and style.
+*   **Tech**: Uses `gemini-2.5-flash-preview-tts` for native high-quality narration.
+*   **Resilience**: Falls back to text-only script if audio generation fails.
 
 ### Knowledge Ingestion (Context-Full)
 *   **Input**: PDF Rulebooks in `pdf/`.
