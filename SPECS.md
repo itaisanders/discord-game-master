@@ -143,3 +143,7 @@ The bot implements the following native Discord Slash Commands:
 ### RPG Logic
 *   **Fiction-First**: Narrative takes precedence.
 *   **Safety**: `/x` command immediately stops generation, rewinds memory, and pivots narrative.
+
+### Feature Constraints
+*   **Bard Module**: Slash commands (`/summary`, `/voice`) are **disabled** if no voices are configured in the Voice Registry.
+
