@@ -11,7 +11,6 @@ from google.genai import types
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-lite")
-AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-lite")
 OUTPUT_DIR = "knowledge"
 
 if not GEMINI_API_KEY:
