@@ -41,7 +41,7 @@ Fact 2
          assert mock_file.write_text.called
 
 @pytest.mark.asyncio
-@patch("src.core.client.client_genai.aio.models.generate_content", new_callable=AsyncMock)
+@patch("src.modules.memory.service.llm_provider.generate", new_callable=AsyncMock)
 @patch("src.modules.memory.service.load_memory")
 @patch("src.modules.memory.service.save_ledger_files")
 async def test_update_ledgers_logic(mock_save, mock_load, mock_gen, temp_memory_dir):
@@ -49,9 +49,7 @@ async def test_update_ledgers_logic(mock_save, mock_load, mock_gen, temp_memory_
     mock_load.return_value = "Existing content"
     
     # Mock Response
-    mock_res = MagicMock()
-    mock_res.text = "FILE: update.ledger\nNew content"
-    mock_gen.return_value = mock_res
+    mock_gen.return_value = "FILE: update.ledger\nNew content"
     
     # We need to make sure the persona exists for the test
     with patch("src.modules.memory.service.pathlib.Path") as mock_path_class:

@@ -20,6 +20,14 @@ Exposes environment configuration and validation logic.
 - **`PERSONA_FILE`** (`str`): Path to the GM persona file (default: `personas/gm_persona.md`).
 - **`AI_MODEL`** (`str`): The specific Gemini model identifier (default: `gemini-2.0-flash-lite`).
 
+### `llm.py`
+Abstracts the LLM provider to support modular backends (Gemini, Ollama, etc.).
+
+#### Classes
+- **`LLMProvider(ABC)`**: Abstract base class defining the `generate` interface.
+- **`GeminiProvider`**: Implementation for Google's Gemini API.
+- **`ProviderFactory`**: Factory to instantiate the correct provider based on configuration.
+
 ### `views.py`
 Contains reusable Discord UI components.
 

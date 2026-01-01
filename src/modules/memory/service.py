@@ -10,8 +10,8 @@ from google.genai import types
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 
-from src.core.config import AI_MODEL
-from src.core.client import client_genai
+from src.core.config import AI_MODEL, MODEL_ARCHITECT, MODEL_FEEDBACK
+from src.core.client import client_genai, llm_provider
 
 # Load Persona (Dynamic Load)
 
@@ -73,16 +73,14 @@ async def update_ledgers_logic(update_facts):
         prompt = f"# CURRENT LEDGER STATE\n{current_memory if current_memory else '[Empty]'}\n\n# NEW FACTS TO INCORPORATE\n{update_facts}"
         
         # Use AIO client to prevent blocking
-        response = await client_genai.aio.models.generate_content(
-            model=AI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=persona_content,
-                temperature=0.1
-            )
+        response_text = await llm_provider.generate(
+            model_name=MODEL_ARCHITECT,
+            system_instruction=persona_content,
+            history=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
+            temperature=0.1
         )
-        if response.text:
-            save_ledger_files(response.text)
+        if response_text:
+            save_ledger_files(response_text)
     except Exception as e:
         print(f"❌ Ledger Update Error: {e}")
 
@@ -105,16 +103,14 @@ async def reverse_ledgers_logic(facts_to_reverse):
             f"# REWIND EVENT: The following facts are now INCORRECT and must be REVERSED or REMOVED from the ledgers:\n{facts_to_reverse}"
         )
         
-        response = await client_genai.aio.models.generate_content(
-            model=AI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=persona_content,
-                temperature=0.1
-            )
+        response_text = await llm_provider.generate(
+            model_name=MODEL_ARCHITECT,
+            system_instruction=persona_content,
+            history=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
+            temperature=0.1
         )
-        if response.text:
-            save_ledger_files(response.text)
+        if response_text:
+            save_ledger_files(response_text)
             print("⏪ Ledgers Reversed.")
     except Exception as e:
         print(f"❌ Ledger Reversal Error: {e}")
@@ -177,8 +173,8 @@ async def fetch_character_sheet(character_name: str) -> Optional[str]:
 async def get_feedback_interpretation(feedback_type: str, message: str) -> str:
     """Uses the GM persona to interpret player feedback."""
     try:
-        from src.core.config import AI_MODEL
-        from src.core.client import client_genai
+        from src.core.config import MODEL_FEEDBACK
+        from src.core.client import llm_provider
         from src.modules.narrative.loader import load_system_instruction
         
         persona_content = load_system_instruction()
@@ -190,15 +186,13 @@ async def get_feedback_interpretation(feedback_type: str, message: str) -> str:
             f"**Your Interpretation:** Briefly explain your understanding of this feedback and how it might influence future sessions. Start with 'I understand...'. Then, create a ```FEEDBACK_UPDATE``` block containing a concise, structured fact for your long-term memory."
         )
 
-        response = await client_genai.aio.models.generate_content(
-            model=AI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=persona_content,
-                temperature=0.7
-            )
+        response_text = await llm_provider.generate(
+            model_name=MODEL_FEEDBACK,
+            system_instruction=persona_content,
+            history=[types.Content(role="user", parts=[types.Part.from_text(text=prompt)])],
+            temperature=0.7
         )
-        return response.text.strip()
+        return response_text.strip()
     except Exception as e:
         print(f"❌ Feedback Interpretation Error: {e}")
         return "Sorry, I had trouble understanding that. Please try again."
@@ -238,13 +232,14 @@ async def rebuild_memory_from_history(history_text: str) -> int:
             
         persona_content = architect_persona_path.read_text(encoding="utf-8")
         
-        response = await client_genai.aio.models.generate_content(
-            model=AI_MODEL,
-            contents=f"# HISTORY\n{history_text}\n\nBuild fresh ledgers.",
-            config=types.GenerateContentConfig(system_instruction=persona_content, temperature=0.1)
+        response_text = await llm_provider.generate(
+            model_name=MODEL_ARCHITECT,
+            system_instruction=persona_content,
+            history=[types.Content(role="user", parts=[types.Part.from_text(text=f"# HISTORY\n{history_text}\n\nBuild fresh ledgers.")])],
+            temperature=0.1
         )
-        if response.text:
-            return save_ledger_files(response.text)
+        if response_text:
+            return save_ledger_files(response_text)
     except Exception as e:
         print(f"❌ Memory Rebuild Error: {e}")
     return 0

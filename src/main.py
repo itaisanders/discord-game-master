@@ -13,8 +13,8 @@ from google.genai import types
 # Add the project root to sys.path so we can import src modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.core.config import validate_config, DISCORD_TOKEN, AI_MODEL, TARGET_CHANNEL_ID
-from src.core.client import client_discord, tree, client_genai
+from src.core.config import validate_config, DISCORD_TOKEN, AI_MODEL, MODEL_GM, TARGET_CHANNEL_ID
+from src.core.client import client_discord, tree, client_genai, llm_provider
 
 # Import Modules
 from src.modules.dice.rolling import roll
@@ -99,17 +99,15 @@ async def on_message(message):
             history.reverse()
             final_system_instruction = f"{full_context}\n\n# CURRENT CAMPAIGN STATE (READ-ONLY)\n{ledger_content}"
             
-            response = await client_genai.aio.models.generate_content(
-                model=AI_MODEL,
-                contents=history,
-                config=types.GenerateContentConfig(
-                    system_instruction=final_system_instruction,
-                    temperature=0.7
-                )
+            response_text = await llm_provider.generate(
+                model_name=MODEL_GM,
+                system_instruction=final_system_instruction,
+                history=history,
+                temperature=0.7
             )
             
-            if response.text:
-                final_text, facts, visual_prompt = process_response_formatting(response.text)
+            if response_text:
+                final_text, facts, visual_prompt = process_response_formatting(response_text)
                 
                 # RETRY LOGIC (Force Narrative Limit)
                 if check_length_violation(final_text):
@@ -117,20 +115,18 @@ async def on_message(message):
                     correction = f"SYSTEM ERROR: Your last response was {len(final_text)} characters long, exceeding the 1900 limit. REWRITE the response to be under 1900 characters immediately. Do not lose narrative progress, just summarize."
                     
                     # Append bad context + correction
-                    history.append(types.Content(role="model", parts=[types.Part.from_text(text=response.text)]))
+                    history.append(types.Content(role="model", parts=[types.Part.from_text(text=response_text)]))
                     history.append(types.Content(role="user", parts=[types.Part.from_text(text=correction)]))
                     
                     try:
-                        response = await client_genai.aio.models.generate_content(
-                            model=AI_MODEL,
-                            contents=history,
-                            config=types.GenerateContentConfig(
-                                system_instruction=final_system_instruction,
-                                temperature=0.7
-                            )
+                        response_text = await llm_provider.generate(
+                            model_name=MODEL_GM,
+                            system_instruction=final_system_instruction,
+                            history=history,
+                            temperature=0.7
                         )
-                        if response.text:
-                            final_text, facts, visual_prompt = process_response_formatting(response.text)
+                        if response_text:
+                            final_text, facts, visual_prompt = process_response_formatting(response_text)
                             print(f"✅ Retry received ({len(final_text)} chars).")
                     except Exception as retry_err:
                         print(f"❌ Retry failed: {retry_err}")

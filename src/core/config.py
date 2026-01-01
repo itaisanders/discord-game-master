@@ -10,6 +10,13 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 TARGET_CHANNEL_ID_STR = os.getenv("TARGET_CHANNEL_ID")
 
 AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash-lite")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini")
+
+# Model Overrides per Persona/Function
+MODEL_GM = os.getenv("MODEL_GM", AI_MODEL)
+MODEL_ARCHITECT = os.getenv("MODEL_ARCHITECT", AI_MODEL)
+MODEL_VISUAL = os.getenv("MODEL_VISUAL", "gemini-2.5-flash-image") # Default for visuals
+MODEL_FEEDBACK = os.getenv("MODEL_FEEDBACK", AI_MODEL)
 
 TARGET_CHANNEL_ID = 0
 try:
