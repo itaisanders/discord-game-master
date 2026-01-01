@@ -89,6 +89,7 @@ The system operates on a cyclical flow:
         *   `src/modules/commands/`: Slash command registry and help documentation.
         *   `src/modules/ingestion/`: Tools for rulebook ingestion and art style analysis.
         *   `src/modules/feedback/`: Player feedback system (Stars/Wishes) and implicit detection logic.
+        *   `src/modules/table/`: Table State Machine (Session phases: IDLE, ACTIVE, PAUSED, etc.).
 *   `knowledge/`: Ingested rulebooks (.md).
 *   `memory/`: Campaign state (.ledger).
 *   `scripts/`: Maintenance and utility scripts.

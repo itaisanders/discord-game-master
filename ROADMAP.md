@@ -64,6 +64,9 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
     - `/wishes [message]`: Players suggest something they'd like to see in the future.
     - Implicit Feedback: The AI will be instructed to analyze player messages for sentiment and content that can be interpreted as a "star" or a "wish". If the AI deems the feedback to be valid, it will be added to the feedback database via the feedback protocol.
 - [ ] **Table State Machine**: Implement session phase and OOC vs IC state management to prevent meta-bleed.
+    - **Session Zero**: Initial state for world-building and character creation.
+    - **States**: `IDLE`, `SESSION_ZERO`, `ACTIVE`, `PAUSED`, `DEBRIEF`.
+    - **Commands**: `/session [start|zero|pause|resume|end|close]` to manage flow.
 - [ ] **Dedicated Player Ledger**: Refactor the current players mapping in `party.ledger` into a dedicated `players.ledger` to centralize User ID, username, and character name associations, making it more robust and easier to manage.
     - `/party`: List all players in the campaign along with their characters and their current status (ephemeral).
 - [ ] **Vocal Summaries**: Audio/text session recaps since the last logout.

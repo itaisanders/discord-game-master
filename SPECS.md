@@ -89,12 +89,27 @@ Structure complex data for display.
     2.  AI outputs `FEEDBACK_DETECTED` block.
     3.  Bot triggers the confirmation flow for that user.
 
+### Table State Machine
+*   **Module**: `src/modules/table/`
+*   **States**:
+    *   `IDLE`: Bot ignores chat (between sessions).
+    *   `SESSION_ZERO`: Active for setup/world-building.
+    *   `ACTIVE`: Main game loop.
+    *   `PAUSED`: Temporary suspension (bio-breaks).
+    *   `DEBRIEF`: Session end (feedback focus).
+*   **Persistence**: `memory/table_state.json`.
+*   **Logic**: Narrative engine (`on_message`) is gated by state.
+    *   `IDLE`, `PAUSED`: No LLM calls.
+    *   `ACTIVE`, `SESSION_ZERO`: LLM called with context.
+    *   `DEBRIEF`: No LLM calls (except specific feedback triggers).
+
 ## 3. Slash Command Registry
 
 The bot implements the following native Discord Slash Commands:
 
 | Command | Arguments | Visibility | Description |
 | :--- | :--- | :--- | :--- |
+| `/session` | `state` | Public | Manage table state (`start`, `zero`, `pause`, `resume`, `end`, `close`). |
 | `/roll` | `[dice]` | Public | Roll dice or execute a pending GM-requested roll. |
 | `/help` | None | Ephemeral | Shows the full list of available commands and descriptions. |
 | `/sheet` | `[user]` | Ephemeral | Displays a character sheet from the `party.ledger`. |

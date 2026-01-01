@@ -40,10 +40,15 @@ from src.modules.narrative.parser import (
 from src.modules.narrative.loader import load_system_instruction
 from src.modules.commands.registry import get_help_text
 
+from src.modules.table.state import TableManager, TableState
+from src.modules.table.commands import register_table_commands
+
 from src.core.views import ConfirmView, FeedbackConfirmView
 
 # Initialize Managers
 away_manager = AwayManager() 
+table_manager = TableManager()
+register_table_commands(tree, table_manager)
 
 # ------------------------------------------------------------------
 # EVENT HANDLERS
@@ -79,6 +84,11 @@ async def on_message(message):
     if message.content.startswith('/'):
         return
 
+    # --- TABLE STATE CHECK ---
+    # Only process narrative if state is ACTIVE or SESSION_ZERO
+    if not table_manager.is_narrative_active():
+        return
+
     # --- MAIN AI NARRATIVE LOOP ---
     if message.content.strip().startswith("(") or message.content.strip().startswith("[OOC]"):
         return 
@@ -97,7 +107,14 @@ async def on_message(message):
                 history.append(types.Content(role=role, parts=[types.Part.from_text(text=content)]))
             
             history.reverse()
-            final_system_instruction = f"{full_context}\n\n# CURRENT CAMPAIGN STATE (READ-ONLY)\n{ledger_content}"
+            
+            # Inject Table State for context-aware responses
+            current_state_str = table_manager.get_state().value
+            state_context = f"\n\n# CURRENT TABLE STATE: {current_state_str}\n"
+            if current_state_str == "SESSION_ZERO":
+                state_context += "Focus on world-building, character creation, and establishing facts. Be less of a narrator and more of a facilitator."
+            
+            final_system_instruction = f"{full_context}{state_context}\n\n# CURRENT CAMPAIGN STATE (READ-ONLY)\n{ledger_content}"
             
             response_text = await llm_provider.generate(
                 model_name=MODEL_GM,
@@ -366,6 +383,24 @@ def run_terminal_mode():
         if user_input.lower() in ["exit", "quit"]:
             print("👋 Session ended.")
             break
+        
+        # Terminal-based state control
+        if user_input.startswith("/session"):
+            parts = user_input.split()
+            if len(parts) > 1:
+                cmd = parts[1].lower()
+                if cmd == "start": table_manager.set_state(TableState.ACTIVE)
+                elif cmd == "zero": table_manager.set_state(TableState.SESSION_ZERO)
+                elif cmd == "pause": table_manager.set_state(TableState.PAUSED)
+                elif cmd == "resume": table_manager.set_state(TableState.ACTIVE)
+                elif cmd == "end": table_manager.set_state(TableState.DEBRIEF)
+                elif cmd == "close": table_manager.set_state(TableState.IDLE)
+                print(f"✅ Table State set to {table_manager.get_state().value}")
+            continue
+
+        if not table_manager.is_narrative_active():
+            print(f"⏸️  Table is {table_manager.get_state().value}. Narrative ignored. Use '/session start' to begin.")
+            continue
 
         print("🤖 GM is typing...", end="\r")
 
@@ -385,11 +420,20 @@ def run_terminal_mode():
                     parts=[types.Part.from_text(text="*(Acknowledging history context...)*")]
                 ))
 
-            # 2. Create Chat Session
+            # 2. Inject Context with State
+            current_state_str = table_manager.get_state().value
+            ledger_content = load_memory()
+            state_context = f"\n\n# CURRENT TABLE STATE: {current_state_str}\n"
+            if current_state_str == "SESSION_ZERO":
+                state_context += "Focus on world-building, character creation, and establishing facts. Be less of a narrator and more of a facilitator."
+            
+            final_instruction = f"{full_instruction}{state_context}\n\n# CURRENT CAMPAIGN STATE (READ-ONLY)\n{ledger_content}"
+
+            # 3. Create Chat Session
             chat = client_genai.aio.chats.create(
                 model=AI_MODEL,
                 config=types.GenerateContentConfig(
-                    system_instruction=full_instruction,
+                    system_instruction=final_instruction,
                     safety_settings=safety_settings
                 ),
                 history=gemini_history
