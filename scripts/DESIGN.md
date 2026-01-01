@@ -7,5 +7,5 @@ The `scripts/` directory contains utility tools for maintaining the bot.
 
 
 ### Maintenance Tools
-*   **`check_env.py`**: Validates that `.env` exists and has all required keys (`DISCORD_TOKEN`, `GEMINI_API_KEY`).
+*   **`check_env.py`**: Validates that `.env` exists and has all required keys (`DISCORD_TOKEN`, `GEMINI_API_KEY`, `LLM_PROVIDER`).
 

@@ -1,7 +1,7 @@
 # Narrative Module Design
 
 ## Overview
-The `narrative` module handles the "Protocol Parsing" layer. It interprets raw text output from the AI, executes special instructions (like Dice Rolls), and ensures proper formatting for Discord.
+The `narrative` module handles the "Protocol Parsing" layer. It interprets raw text output from the AI provider, executes special instructions (like Dice Rolls), and ensures proper formatting for Discord.
 
 > **Note**: While this module handles formatting, the actual "Smart Chunking" (splitting messages > 2000 chars) is currently implemented directly in the `src/main.py` event loop for simplicity.
 

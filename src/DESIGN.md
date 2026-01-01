@@ -1,11 +1,11 @@
 # Main Application Design (`src/main.py`)
 
 ## Overview
-`src/main.py` is the application entry point and event orchestrator. It ties together the modular components (`core`, `dice`, `presence`, `memory`, `narrative`), initializes the Discord/Gemini clients, and registers all user-facing interactions.
+`src/main.py` is the application entry point and event orchestrator. It ties together the modular components (`core`, `dice`, `presence`, `memory`, `narrative`), initializes the Discord/AI provider clients, and registers all user-facing interactions.
 
 ## Architecture Role
 - **Event Loop**: Manages the `on_ready` and `on_message` Discord events.
-- **Protocol Router**: Dispatches non-command interactions (narrative text) to the Gemini AI and handles the resulting protocols (`DICE_ROLL`, `MEMORY_UPDATE`, etc.).
+- **Protocol Router**: Dispatches non-command interactions (narrative text) to the AI provider and handles the resulting protocols (`DICE_ROLL`, `MEMORY_UPDATE`, etc.).
 - **Command Registry**: Defines and registers all Slash Commands via the `discord.app_commands.CommandTree`.
 
 ## Public Interface (Slash Commands)
