@@ -1,22 +1,16 @@
 # Tasks
 
 ## In Progress
+- [ ] **Dedicated Player Ledger**: Refactor `party.ledger` into a dedicated `players.ledger`.
 
 ## Completed
+- [x] **Table State Machine (Implicit)**: Implement implicit triggers for table state changes.
+    - [x] Update `SPECS.md` with `TABLE_STATE` protocol.
+    - [x] Update `gm_persona.md` with instructions for `TABLE_STATE` block.
+    - [x] Update `parser.py` to extract `TABLE_STATE`.
+    - [x] Update `main.py` to handle detected state changes with a `StateChangeView`.
+    - [x] Verify with tests and docs.
 - [x] **Table State Machine**: Implement session phase and OOC vs IC state management to prevent meta-bleed.
-    - [x] **Step 1: Core Logic**
-        - [x] Implement `src/modules/table/state.py`: Define `TableState` Enum and `TableManager` class with JSON persistence (`memory/table_state.json`).
-    - [x] **Step 2: Verification (Unit Tests)**
-        - [x] Create `tests/test_table_state.py`: Test state transitions, persistence, and `is_active()` logic.
-        - [x] Run `pytest tests/test_table_state.py` to ensure core stability.
-    - [x] **Step 3: Interface**
-        - [x] Implement `src/modules/table/commands.py`: Create the `/session` slash command group with options (`start`, `zero`, `pause`, `resume`, `end`, `close`).
-    - [x] **Step 4: Integration**
-        - [x] Update `src/main.py`: Initialize `TableManager`, register commands, and gate the `on_message` narrative loop.
-    - [x] **Step 5: Final Verification & Docs**
-        - [x] Restart Bot / Run Terminal Mode to verify end-to-end flow.
-        - [x] Align `ARCHITECTURE.md` and module `DESIGN.md` with final implementation.
-        - [x] Commit changes.
 - [x] **Stars and Wishes**: Implement a player feedback system.
     - [x] `/stars [message]`: Players highlight something they enjoyed. (Implemented in main.py)
     - [x] `/wishes [message]`: Players suggest something they'd like to see in the future. (Implemented in main.py)

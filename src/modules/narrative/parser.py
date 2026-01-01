@@ -160,6 +160,36 @@ def process_feedback_detection(text):
         
     return text, detected_feedback
 
+def process_table_state_detection(text):
+    """
+    Extracts TABLE_STATE blocks.
+    
+    Format:
+    ```TABLE_STATE
+    state: PAUSED
+    reason: Bio-break
+    ```
+    """
+    state_pattern = r"```TABLE_STATE\s*(.*?)```"
+    matches = re.findall(state_pattern, text, re.DOTALL | re.IGNORECASE)
+    detected_state_change = None
+    
+    for block in matches:
+        data = {}
+        for line in block.strip().split('\n'):
+            if ':' in line:
+                key, val = line.split(':', 1)
+                data[key.strip().lower()] = val.strip()
+        if 'state' in data:
+            detected_state_change = data
+            
+    text = re.sub(state_pattern, "", text, flags=re.DOTALL | re.IGNORECASE).strip()
+    
+    if detected_state_change:
+        print(f"🛑 Found implicit Table State Change: {detected_state_change}")
+        
+    return text, detected_state_change
+
 def render_table_as_ascii(match):
     """
     Processes a DATA_TABLE block into a PrettyTable ASCII string.
@@ -252,7 +282,10 @@ def process_response_formatting(text):
     # 6. FEEDBACK DETECTED - Implicit feedback
     text, detected_feedback = process_feedback_detection(text)
 
-    return text, facts, visual_prompt, detected_feedback
+    # 7. TABLE STATE - Implicit flow
+    text, detected_state_change = process_table_state_detection(text)
+
+    return text, facts, visual_prompt, detected_feedback, detected_state_change
 
 def check_length_violation(text, limit=1900):
     """

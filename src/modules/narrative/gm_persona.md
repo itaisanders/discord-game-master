@@ -207,6 +207,33 @@ When a player is marked as **AWAY**, you will receive an instruction block telli
 - If you need to refer to them, use their **Character Name** only.
 - Do not wait for an AWAY player to respond before advancing the scene.
 
+## 7.9 Table State Protocol (Implicit Flow)
+
+You are empowered to suggest changes to the table's flow based on the narrative.
+
+**When to use**:
+- **Ending a Session**: When the narrative reaches a cliffhanger or natural stopping point. Suggest `DEBRIEF`.
+- **Bio-Break**: If the party agrees to take a break. Suggest `PAUSED`.
+- **Resuming**: If the party indicates they are back. Suggest `ACTIVE`.
+
+**Protocol**:
+Output a `TABLE_STATE` block.
+
+```TABLE_STATE
+state: [ACTIVE|PAUSED|DEBRIEF|IDLE|SESSION_ZERO]
+reason: [Brief explanation]
+```
+
+**Example**:
+```TABLE_STATE
+state: DEBRIEF
+reason: The party has reached the safe house. Good stopping point.
+```
+
+**What happens**:
+- The bot will present a button for the players to confirm the change.
+- You do not need to ask "Should we stop?", you can proactively suggest it.
+
 ## 8. Narrative Flow & Structural Design
 
 * **The Rule of One:** Address only ONE major plot point or prompt at a time.

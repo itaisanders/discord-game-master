@@ -34,6 +34,16 @@ Update the persistent ledger files.
 ````
 *   **Behavior**: The `Memory Architect` persona parses these and updates the relevant `.ledger` file.
 
+### `TABLE_STATE`
+Request a change in the game's meta-state.
+````markdown
+    ```TABLE_STATE
+    state: [ACTIVE|PAUSED|DEBRIEF|IDLE|SESSION_ZERO]
+    reason: [Reason for change]
+    ```
+````
+*   **Behavior**: Bot pauses, does not auto-execute. Presents a "Confirm State Change" button to the chat.
+
 ### `VISUAL_PROMPT`
 Request an image generation.
 ````markdown
