@@ -33,7 +33,9 @@ from src.modules.memory.service import (
 from src.modules.narrative.parser import (
     process_response_formatting, 
     pending_rolls, 
-    filter_away_mentions
+    filter_away_mentions,
+    check_length_violation,
+    smart_chunk_text
 )
 from src.modules.narrative.loader import load_system_instruction
 from src.modules.commands.registry import get_help_text
@@ -109,8 +111,32 @@ async def on_message(message):
             if response.text:
                 final_text, facts, visual_prompt = process_response_formatting(response.text)
                 
-                # Simple Smart Chunking
-                chunks = [final_text[i:i+1950] for i in range(0, len(final_text), 1950)]
+                # RETRY LOGIC (Force Narrative Limit)
+                if check_length_violation(final_text):
+                    print(f"⚠️ Output too long ({len(final_text)} chars). Attempting condensed retry...")
+                    correction = f"SYSTEM ERROR: Your last response was {len(final_text)} characters long, exceeding the 1900 limit. REWRITE the response to be under 1900 characters immediately. Do not lose narrative progress, just summarize."
+                    
+                    # Append bad context + correction
+                    history.append(types.Content(role="model", parts=[types.Part.from_text(text=response.text)]))
+                    history.append(types.Content(role="user", parts=[types.Part.from_text(text=correction)]))
+                    
+                    try:
+                        response = await client_genai.aio.models.generate_content(
+                            model=AI_MODEL,
+                            contents=history,
+                            config=types.GenerateContentConfig(
+                                system_instruction=final_system_instruction,
+                                temperature=0.7
+                            )
+                        )
+                        if response.text:
+                            final_text, facts, visual_prompt = process_response_formatting(response.text)
+                            print(f"✅ Retry received ({len(final_text)} chars).")
+                    except Exception as retry_err:
+                        print(f"❌ Retry failed: {retry_err}")
+
+                # Smart Chunking (Fallback)
+                chunks = smart_chunk_text(final_text)
                 for chunk in chunks:
                     if chunk.strip():
                         await message.channel.send(chunk)

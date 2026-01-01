@@ -40,6 +40,12 @@ The main processor for AI text.
 - **`filter_away_mentions(text: str) -> str`**
     - **Description**: Replaces tags like `<@123>` with `**(Away)**` if the user is in Away Mode.
 
+- **`check_length_violation(text: str, limit: int = 1900) -> bool`**
+    - **Description**: Checks if the *narrative* portion of the text (excluding protocol blocks like `MEMORY_UPDATE`) exceeds the character limit.
+
+- **`smart_chunk_text(text: str, limit: int = 1900) -> List[str]`**
+    - **Description**: Splits text into chunks respecting the limit, prioritizing splitting at paragraph breaks (`\n\n`), then line breaks (`\n`), then sentence endings (`. `). Avoids breaking inside code blocks if possible.
+
 ## Data Structures
 
 ### `pending_rolls` (Global Dictionary)

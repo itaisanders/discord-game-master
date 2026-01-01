@@ -1,9 +1,60 @@
 
 import pytest
 import re
-import pytest
-import re
-from src.modules.narrative.parser import process_response_formatting, render_table_as_ascii
+from src.modules.narrative.parser import (
+    process_response_formatting, 
+    render_table_as_ascii,
+    check_length_violation,
+    smart_chunk_text
+)
+
+def test_check_length_violation():
+    """Test length check logic."""
+    assert check_length_violation("A" * 1901) is True
+    assert check_length_violation("A" * 1900) is False
+    assert check_length_violation("A" * 100) is False
+
+def test_smart_chunk_text_basic():
+    """Test that text under limit is returned as single chunk."""
+    text = "Hello world."
+    chunks = smart_chunk_text(text, limit=100)
+    assert len(chunks) == 1
+    assert chunks[0] == text
+
+def test_smart_chunk_text_paragraphs():
+    """Test splitting by paragraphs."""
+    p1 = "Paragraph 1." * 10 
+    p2 = "Paragraph 2." * 10
+    text = f"{p1}\n\n{p2}"
+    # Set limit smaller than total but larger than individual paras
+    limit = len(p1) + 10 
+    
+    chunks = smart_chunk_text(text, limit=limit)
+    assert len(chunks) == 2
+    assert chunks[0].strip() == p1
+    assert chunks[1].strip() == p2
+
+def test_smart_chunk_text_lines():
+    """Test splitting by lines when paragraphs are too big."""
+    line1 = "Line 1." * 5
+    line2 = "Line 2." * 5
+    # A single paragraph with two lines
+    text = f"{line1}\n{line2}"
+    limit = len(line1) + 5
+    
+    chunks = smart_chunk_text(text, limit=limit)
+    assert len(chunks) == 2
+    assert chunks[0].strip() == line1
+    assert chunks[1].strip() == line2
+
+def test_smart_chunk_text_hard_split():
+    """Test hard split if a single line is massive."""
+    text = "A" * 100
+    limit = 50
+    chunks = smart_chunk_text(text, limit=limit)
+    assert len(chunks) == 2
+    assert chunks[0] == "A" * 50
+    assert chunks[1] == "A" * 50
 
 def test_process_response_formatting_data_table():
     """Test that DATA_TABLE blocks are correctly identified and processed."""

@@ -218,3 +218,67 @@ def process_response_formatting(text):
     text = process_roll_calls(text)
 
     return text, facts, visual_prompt
+
+def check_length_violation(text, limit=1900):
+    """
+    Checks if the narrative portion of the text exceeds the character limit.
+    Assumes 'text' is the processed narrative (protocols stripped).
+    """
+    return len(text) > limit
+
+def smart_chunk_text(text, limit=1900):
+    """
+    Splits text into chunks respecting the limit, prioritizing:
+    1. Paragraph breaks (\\n\\n)
+    2. Line breaks (\\n)
+    3. Sentence endings (. )
+    4. Hard limit
+    """
+    if len(text) <= limit:
+        return [text]
+    
+    chunks = []
+    current_chunk = ""
+    
+    # Strategy 1: Split by Paragraphs
+    # We use a custom split to preserve empty lines if needed, but standard split is fine for now
+    paragraphs = text.split('\n\n')
+    
+    for para in paragraphs:
+        # Check if adding this paragraph exceeds limit
+        # +2 for the \n\n we removed
+        if len(current_chunk) + len(para) + 2 <= limit:
+            current_chunk += para + "\n\n"
+        else:
+            # Current chunk is full, push it
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+                current_chunk = ""
+            
+            # Now handle the new paragraph 'para'
+            if len(para) <= limit:
+                current_chunk = para + "\n\n"
+            else:
+                # Paragraph itself is too huge. Strategy 2: Split by Lines
+                lines = para.split('\n')
+                for line in lines:
+                    if len(current_chunk) + len(line) + 1 <= limit:
+                         current_chunk += line + "\n"
+                    else:
+                        if current_chunk:
+                            chunks.append(current_chunk.strip())
+                            current_chunk = ""
+                        
+                        if len(line) <= limit:
+                            current_chunk = line + "\n"
+                        else:
+                             # Line is too huge. Strategy 3: Hard split
+                            while len(line) > limit:
+                                chunks.append(line[:limit])
+                                line = line[limit:]
+                            current_chunk = line + "\n"
+                            
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+        
+    return chunks

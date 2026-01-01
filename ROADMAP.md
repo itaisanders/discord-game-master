@@ -53,7 +53,7 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - [x] **Modularize the code**: Refactor the code into modules.
 - [x] **Couple Personas to Modules**: Distribute the personas .md files from the personas folder into their appropriate modules folders
     - Change modules structure if needed.
-- [ ] **Output Polish**: Force bot output to be formatted to fit character limit, handle character limit and formatting faults gracefully instead of breaking the output into multiple messages.
+- [x] **Output Polish**: Force bot output to be formatted to fit character limit, handle character limit and formatting faults gracefully instead of breaking the output into multiple messages.
 - [ ] **Modular Provider (Alpha)**: Initial support for configurable model backends (Ollama/Custom).
 
 ### 🟡 Phase 2: expansion
