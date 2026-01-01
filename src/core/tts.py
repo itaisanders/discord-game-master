@@ -22,7 +22,7 @@ class GeminiTTSProvider(TTSProvider):
     Note: Requires a model that supports audio output modality.
     """
     
-    def __init__(self, api_key: str, model_name: str = "gemini-2.0-flash-lite-preview-02-05"):
+    def __init__(self, api_key: str, model_name: str = "gemini-3-flash-preview"):
         self.client = genai.Client(api_key=api_key)
         self.model_name = model_name
 
