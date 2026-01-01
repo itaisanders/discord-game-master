@@ -14,6 +14,8 @@ Here are the commands you can use to interact with the game world and the bot:
 
 **Meta & Utility**
 *   `/help` - Shows this help message.
+*   `/stars [message]` - Share positive feedback about the session.
+*   `/wishes [message]` - Share constructive feedback or future desires.
 *   `/ooc [message]` - Send an Out-of-Character message to the other players.
 *   `/rewind [new_direction]` - Rewind the last narrative action to choose a different path.
 *   `/x [reason]` - Use the X-Card safety tool to pivot the scene.

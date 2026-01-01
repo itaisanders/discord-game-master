@@ -78,12 +78,16 @@ Structure complex data for display.
 *   **Storage**: `.md` files in `knowledge/`.
 *   **Loading**: All files in `knowledge/` are aggregated with the module-specific persona via `src/modules/narrative/loader.py` and injected into the System Instruction at startup.
 
-### Interactive Feedback (`/stars`, `/wishes`)
-*   **Flow**:
-    1.  User inputs feedback.
+### Interactive Feedback (`/stars`, `/wishes` & Implicit)
+*   **Explicit Flow**:
+    1.  User inputs feedback via slash command.
     2.  AI interprets feedback for storing.
     3.  Bot asks User to Confirm/Cancel.
     4.  If Confirmed, written to feedback ledger.
+*   **Implicit Flow**:
+    1.  AI detects praise ("I loved that!") or desire ("I hope we fight a dragon") in normal chat.
+    2.  AI outputs `FEEDBACK_DETECTED` block.
+    3.  Bot triggers the confirmation flow for that user.
 
 ## 3. Slash Command Registry
 

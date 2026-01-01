@@ -88,6 +88,7 @@ The system operates on a cyclical flow:
         *   `src/modules/narrative/`: AI parsing, Protocol handling, and the **GM** persona.
         *   `src/modules/commands/`: Slash command registry and help documentation.
         *   `src/modules/ingestion/`: Tools for rulebook ingestion and art style analysis.
+        *   `src/modules/feedback/`: Player feedback system (Stars/Wishes) and implicit detection logic.
 *   `knowledge/`: Ingested rulebooks (.md).
 *   `memory/`: Campaign state (.ledger).
 *   `scripts/`: Maintenance and utility scripts.

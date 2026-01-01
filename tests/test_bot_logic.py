@@ -67,7 +67,7 @@ Val 1 | Val 2
 ```
 Lore text.
 """
-    cleaned_text, facts, visual_prompt = process_response_formatting(sample_text)
+    cleaned_text, facts, visual_prompt, detected_feedback = process_response_formatting(sample_text)
     
     assert "**Test Table**" in cleaned_text
     assert "Val 1" in cleaned_text
@@ -86,7 +86,7 @@ Victory!
 ```
 Next scene.
 """
-    cleaned_text, facts, visual_prompt = process_response_formatting(sample_text)
+    cleaned_text, facts, visual_prompt, detected_feedback = process_response_formatting(sample_text)
     
     assert "Victory!" in cleaned_text
     assert "Next scene." in cleaned_text
@@ -102,7 +102,7 @@ The scene is set.
 A dark tower in the rain.
 ```
 """
-    cleaned_text, facts, visual_prompt = process_response_formatting(sample_text)
+    cleaned_text, facts, visual_prompt, detected_feedback = process_response_formatting(sample_text)
     
     assert "The scene is set." in cleaned_text
     assert visual_prompt == "A dark tower in the rain."
@@ -124,7 +124,7 @@ HP | 10
 Portrait of a hero
 ```
 """
-    cleaned_text, facts, visual_prompt = process_response_formatting(sample_text)
+    cleaned_text, facts, visual_prompt, detected_feedback = process_response_formatting(sample_text)
     
     assert "**Stats**" in cleaned_text
     assert "HP change" in facts
@@ -158,7 +158,7 @@ Alistair rolls 2d6+3 for Defy Danger
 ```
 What happens next?
 """
-    cleaned_text, facts, visual_prompt = process_response_formatting(sample_text)
+    cleaned_text, facts, visual_prompt, detected_feedback = process_response_formatting(sample_text)
     
     assert "The tension rises." in cleaned_text
     assert "What happens next?" in cleaned_text
@@ -183,7 +183,7 @@ The GM speaks.
 ```
 Who acts first?
 """
-    cleaned_text, facts, visual_prompt = process_response_formatting(sample_text)
+    cleaned_text, facts, visual_prompt, detected_feedback = process_response_formatting(sample_text)
     
     assert "The GM speaks." in cleaned_text
     assert "Who acts first?" in cleaned_text
@@ -200,3 +200,22 @@ Who acts first?
     assert "Alistair" in pending_rolls
     assert pending_rolls["Alistair"]["notation"] == "2d6+3"
     assert "Kaelen" in pending_rolls
+
+def test_process_response_formatting_feedback_detected():
+    """Test that FEEDBACK_DETECTED blocks are correctly extracted and parsed."""
+    sample_text = """
+The players are excited.
+```FEEDBACK_DETECTED
+type: star
+user: Alistair
+content: I loved the dragon description
+```
+"""
+    cleaned_text, facts, visual_prompt, detected_feedback = process_response_formatting(sample_text)
+    
+    assert "The players are excited." in cleaned_text
+    assert "FEEDBACK_DETECTED" not in cleaned_text
+    assert len(detected_feedback) == 1
+    assert detected_feedback[0]['type'] == 'star'
+    assert detected_feedback[0]['user'] == 'Alistair'
+    assert detected_feedback[0]['content'] == 'I loved the dragon description'

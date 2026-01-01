@@ -107,7 +107,7 @@ async def on_message(message):
             )
             
             if response_text:
-                final_text, facts, visual_prompt = process_response_formatting(response_text)
+                final_text, facts, visual_prompt, detected_feedback = process_response_formatting(response_text)
                 
                 # RETRY LOGIC (Force Narrative Limit)
                 if check_length_violation(final_text):
@@ -126,7 +126,7 @@ async def on_message(message):
                             temperature=0.7
                         )
                         if response_text:
-                            final_text, facts, visual_prompt = process_response_formatting(response_text)
+                            final_text, facts, visual_prompt, detected_feedback = process_response_formatting(response_text)
                             print(f"✅ Retry received ({len(final_text)} chars).")
                     except Exception as retry_err:
                         print(f"❌ Retry failed: {retry_err}")
@@ -142,6 +142,28 @@ async def on_message(message):
                 if visual_prompt:
                     # Logic for visual prompt system event
                     await message.channel.send(f"[System Event: Visual Prompt triggered: {visual_prompt}]")
+
+                # Handle Implicit Feedback
+                if detected_feedback:
+                    for fb_item in detected_feedback:
+                        fb_type = fb_item.get('type', 'star').lower()
+                        fb_user_name = fb_item.get('user', 'Unknown')
+                        fb_content = fb_item.get('content', '')
+                        
+                        # Try to find the user object to tag them
+                        target_user = discord.utils.get(message.guild.members, name=fb_user_name)
+                        if not target_user:
+                             # Fallback: Try to match display name or handle generically
+                             target_user = discord.utils.find(lambda m: m.display_name == fb_user_name, message.guild.members)
+                        
+                        if target_user:
+                            # We found the user, we can initiate the confirmation
+                            interpretation = await get_feedback_interpretation(fb_type, fb_content)
+                            view = FeedbackConfirmView(target_user, fb_type, fb_content, interpretation, message.channel, record_feedback)
+                            await message.channel.send(f"💡 {target_user.mention}, I detected a possible **{fb_type.capitalize()}** from you:\n> \"{fb_content}\"\n\n**Interpretation:**\n{interpretation}\n\nDo you want to record this?", view=view)
+                        else:
+                            print(f"⚠️ Could not find user {fb_user_name} for implicit feedback.")
+
         except Exception as e:
             print(f"❌ Error in message loop: {e}")
 

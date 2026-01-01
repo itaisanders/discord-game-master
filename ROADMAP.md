@@ -59,7 +59,7 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 ### 🟡 Phase 2: expansion
 - [x] **Context-Full Knowledge**: Replace RAG with direct Markdown context ingestion for rulebooks.
 - [x] **Away Mode**: Allow players to mark themselves as absent for a session with configurable character handling (ignore character, play as NPC, or narrative excuse).
-- [ ] **Stars and Wishes**: Implement a player feedback system.
+- [x] **Stars and Wishes**: Implement a player feedback system.
     - `/stars [message]`: Players highlight something they enjoyed.
     - `/wishes [message]`: Players suggest something they'd like to see in the future.
     - Implicit Feedback: The AI will be instructed to analyze player messages for sentiment and content that can be interpreted as a "star" or a "wish". If the AI deems the feedback to be valid, it will be added to the feedback database via the feedback protocol.

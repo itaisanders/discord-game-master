@@ -21,7 +21,7 @@ Handles loading the system instruction.
 The main processor for AI text.
 
 #### Functions
-- **`process_response_formatting(text: str) -> Tuple[str, Optional[str], Optional[str]]`**
+- **`process_response_formatting(text: str) -> Tuple[str, Optional[str], Optional[str], List[Dict]]`**
     - **Description**: The master processing pipeline.
         1.  Filters Away Mentions.
         2.  Renders `DATA_TABLE` blocks to ASCII.
@@ -29,7 +29,11 @@ The main processor for AI text.
         4.  Extracts `VISUAL_PROMPT` blocks.
         5.  Executes `DICE_ROLL` blocks (find-and-replace).
         6.  Intercepts `ROLL_CALL` blocks (queues them).
-    - **Returns**: A tuple `(clean_text, memory_facts, visual_prompt)`.
+        7.  Extracts `FEEDBACK_DETECTED` blocks (implicit feedback).
+    - **Returns**: A tuple `(clean_text, memory_facts, visual_prompt, detected_feedback)`.
+
+- **`process_feedback_detection(text: str) -> Tuple[str, List[Dict]]`**
+    - **Description**: Extracts `FEEDBACK_DETECTED` blocks and returns a list of dictionaries with keys `type`, `user`, and `content`.
 
 - **`process_dice_rolls(text: str) -> str`**
     - **Description**: Replaces `DICE_ROLL` blocks with the result of `dice.roll()`.
@@ -67,3 +71,4 @@ The module interprets standard text protocols defined in `SPECS.md`:
 *   `DICE_ROLL`
 *   `ROLL_CALL`
 *   `DATA_TABLE`
+*   `FEEDBACK_DETECTED`

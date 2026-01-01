@@ -129,6 +129,37 @@ def process_roll_calls(text):
     
     return processed
 
+def process_feedback_detection(text):
+    """
+    Extracts FEEDBACK_DETECTED blocks.
+    
+    Format:
+    ```FEEDBACK_DETECTED
+    type: star
+    user: User123
+    content: I loved the dragon description
+    ```
+    """
+    feedback_pattern = r"```FEEDBACK_DETECTED\s*(.*?)```"
+    matches = re.findall(feedback_pattern, text, re.DOTALL | re.IGNORECASE)
+    detected_feedback = []
+    
+    for block in matches:
+        data = {}
+        for line in block.strip().split('\n'):
+            if ':' in line:
+                key, val = line.split(':', 1)
+                data[key.strip().lower()] = val.strip()
+        if 'type' in data and 'user' in data:
+            detected_feedback.append(data)
+            
+    text = re.sub(feedback_pattern, "", text, flags=re.DOTALL | re.IGNORECASE).strip()
+    
+    if detected_feedback:
+        print(f"🔍 Found {len(detected_feedback)} implicit feedback items.")
+        
+    return text, detected_feedback
+
 def render_table_as_ascii(match):
     """
     Processes a DATA_TABLE block into a PrettyTable ASCII string.
@@ -169,7 +200,8 @@ def render_table_as_ascii(match):
 
 def process_response_formatting(text):
     """
-    Handles all regex-based replacements and extractions (DATA_TABLE, MEMORY_UPDATE, VISUAL_PROMPT).
+    Handles all regex-based replacements and extractions (DATA_TABLE, MEMORY_UPDATE, VISUAL_PROMPT, FEEDBACK).
+    Returns: final_text, facts, visual_prompt, detected_feedback
     """
     
     # 0. Safety Net: Filter Away Mentions
@@ -217,7 +249,10 @@ def process_response_formatting(text):
     # 5. ROLL_CALL - Intercept and queue pending rolls
     text = process_roll_calls(text)
 
-    return text, facts, visual_prompt
+    # 6. FEEDBACK DETECTED - Implicit feedback
+    text, detected_feedback = process_feedback_detection(text)
+
+    return text, facts, visual_prompt, detected_feedback
 
 def check_length_violation(text, limit=1900):
     """

@@ -227,7 +227,7 @@ When real life calls, players can mark themselves as Away without pausing the ga
 ## 🧩 Project Structure
 
 *   `src/main.py`: Entry point and event orchestration.
-*   `src/modules/`: Feature logic (Dice, Memory, Presence, Narrative).
+*   `src/modules/`: Feature logic (Dice, Memory, Presence, Narrative, Feedback).
 *   `manage.sh`: Management script for starting/stopping the bot as a background process.
 *   `scripts/index_knowledge.py`: Utility to scan `pdf/` and update the RAG store.
 *   `src/modules/ingestion/`: Tools for PDF-to-Markdown knowledge ingestion.
