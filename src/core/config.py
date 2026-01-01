@@ -17,7 +17,7 @@ MODEL_GM = os.getenv("MODEL_GM", AI_MODEL)
 MODEL_ARCHITECT = os.getenv("MODEL_ARCHITECT", AI_MODEL)
 MODEL_VISUAL = os.getenv("MODEL_VISUAL", "gemini-2.5-flash-image") # Default for visuals
 MODEL_FEEDBACK = os.getenv("MODEL_FEEDBACK", AI_MODEL)
-GEMINI_AUDIO_MODEL = os.getenv("GEMINI_AUDIO_MODEL", "gemini-2.0-flash")
+GEMINI_AUDIO_MODEL = os.getenv("GEMINI_AUDIO_MODEL", "gemini-2.0-flash-exp")
 
 TARGET_CHANNEL_ID = 0
 try:
