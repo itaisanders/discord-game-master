@@ -23,22 +23,24 @@ class GeminiTTSProvider(TTSProvider):
     """
     
     def __init__(self, api_key: str, model_name: str):
-        self.client = genai.Client(api_key=api_key)
+        self.client = genai.Client(api_key=api_key, http_options={'api_version': 'v1beta'})
         self.model_name = model_name
 
     async def generate_audio(self, text: str, voice_id: str) -> io.BytesIO:
         """
-        Generates audio using Gemini. 
-        In Gemini 2.0, audio is requested via response_modalities.
+        Generates audio using Gemini's native narration capabilities.
+        Strictly follows the provided integration pattern for high-quality audio.
         """
         try:
-            print(f"🎙️ Requesting Audio from {self.model_name} with voice: {voice_id}", flush=True)
-            # Wrap the script in a clear instruction
-            prompt = f"Please read the following story aloud using a dramatic voice:\n\n{text}"
+            print(f"🎙️ Generating NARRATION using {self.model_name} (Voice: {voice_id})", flush=True)
+            
+            # The prompt is enriched to trigger native affective dialogue (emotional tone)
+            # We assume 'text' already contains the dramatic script from the Scriptwriter.
+            prompt = f"Narrate the following scene with an evocative, atmospheric, and emotional tone: {text}"
             
             response = await self.client.aio.models.generate_content(
                 model=self.model_name,
-                contents=[prompt],
+                contents=prompt,
                 config=types.GenerateContentConfig(
                     response_modalities=["AUDIO"],
                     speech_config=types.SpeechConfig(
@@ -50,32 +52,20 @@ class GeminiTTSProvider(TTSProvider):
                     )
                 )
             )
-        except Exception as e:
-            print(f"⚠️ First attempt with voice '{voice_id}' failed: {e}")
-            print("🔄 Attempting fallback to default voice...")
-            try:
-                # Fallback: Try without speech_config (default voice)
-                response = await self.client.aio.models.generate_content(
-                    model=self.model_name,
-                    contents=[text],
-                    config=types.GenerateContentConfig(
-                        response_modalities=["AUDIO"]
-                    )
-                )
-            except Exception as fallback_error:
-                print(f"❌ Fallback also failed: {fallback_error}")
-                raise e # Raise original error if both fail
+            
+            # Extract the raw PCM/WAV byte stream
+            audio_bytes = None
+            if response.candidates and response.candidates[0].content:
+                for part in response.candidates[0].content.parts:
+                    if part.inline_data:
+                        audio_bytes = part.inline_data.data
+                        break
+            
+            if audio_bytes:
+                return io.BytesIO(audio_bytes)
+            
+            raise RuntimeError("Gemini returned a response but no 'inline_data' (audio bytes) was found.")
 
-        # Extract audio bytes from the response
-        audio_bytes = None
-        if response.candidates and response.candidates[0].content and response.candidates[0].content.parts:
-            for part in response.candidates[0].content.parts:
-                if part.inline_data:
-                    audio_bytes = part.inline_data.data
-                    break
-        
-        if audio_bytes:
-            return io.BytesIO(audio_bytes)
-        
-        print(f"⚠️ No audio data found. Full Response Candidates: {response.candidates}")
-        raise RuntimeError("Gemini returned a response but no audio data found.")
+        except Exception as e:
+            print(f"❌ Narration Error: {e}", flush=True)
+            raise e

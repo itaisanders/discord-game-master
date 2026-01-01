@@ -27,7 +27,7 @@ class GeminiProvider(LLMProvider):
     """Provider implementation for Google Gemini API."""
     
     def __init__(self, api_key: str):
-        self.client = genai.Client(api_key=api_key)
+        self.client = genai.Client(api_key=api_key, http_options={'api_version': 'v1beta'})
         
     async def generate(self, model_name: str, system_instruction: str, history: List[Any], temperature: float = 0.7) -> str:
         # Convert standard history to Gemini format if necessary, 

@@ -6,7 +6,7 @@ from .llm import ProviderFactory
 
 # Initialize Clients
 # client_genai is kept for backward compatibility if needed, but we should move to llm_provider
-client_genai = genai.Client(api_key=GEMINI_API_KEY)
+client_genai = genai.Client(api_key=GEMINI_API_KEY, http_options={'api_version': 'v1beta'})
 
 # New Modular Provider
 llm_provider = ProviderFactory.get_provider(LLM_PROVIDER, api_key=GEMINI_API_KEY)
