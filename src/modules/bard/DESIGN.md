@@ -37,8 +37,8 @@ Updates the preferred voice. Returns `False` if the key is invalid.
 
 ### `Scriptwriter` (src/modules/bard/scriptwriter.py)
 
-#### `generate_script(history: list[discord.Message], context: str) -> str`
-- **Input**: Recent message history and relevant `world.ledger` context.
+#### `generate_script(history: str, context: str, scope: str = "session") -> str`
+- **Input**: Recent message history, `world.ledger` context, and scope (`session` | `campaign`).
 - **Persona**: Uses `src/modules/bard/narrator_persona.md`.
 - **Output**: A dramatic prose script optimized for audio (no markdown, includes stage directions like `[PAUSE]`).
 

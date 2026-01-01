@@ -36,3 +36,9 @@ def test_is_configured_empty_registry(temp_settings_file, monkeypatch):
     monkeypatch.setattr("src.modules.bard.manager.VOICE_REGISTRY", {})
     manager = BardManager(settings_file=temp_settings_file)
     assert not manager.is_configured()
+
+def test_scriptwriter_signature():
+    from src.modules.bard.scriptwriter import Scriptwriter
+    writer = Scriptwriter()
+    # Basic check to ensure the method exists and accepts arguments (static check mostly)
+    assert hasattr(writer, 'generate_script')

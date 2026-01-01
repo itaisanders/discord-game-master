@@ -44,7 +44,7 @@ class BardCommands:
                 
                 # 2. Generate Script
                 await interaction.edit_original_response(content="✍️ **The Bard is writing the script...**")
-                script = await self.scriptwriter.generate_script(history_text, ledger_context)
+                script = await self.scriptwriter.generate_script(history_text, ledger_context, scope=scope)
                 
                 # 3. Perform Audio
                 try:
