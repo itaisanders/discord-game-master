@@ -2,24 +2,27 @@
 
 ## In Progress
 - [ ] **Dedicated Player Ledger**: Refactor `party.ledger` into a dedicated `players.ledger`.
+    - [ ] Create `src/modules/memory/players_service.py` (or update existing service).
+    - [ ] Implement `/party` slash command.
+    - [ ] Migrate existing player data from `party.ledger` to `players.ledger`.
+    - [ ] Update `gm_persona.md` and `architect_persona.md` to reflect the new ledger structure.
 
 ## Completed
+- [x] **Cinematic Vocal Recaps**: Implement narrative-rich audio summaries with voice customization.
+    - [x] **Design**: Created `src/modules/bard/DESIGN.md` (API, Voice Schema, Persistence).
+    - [x] **Infrastructure**: Implemented `BardManager` and `Voice Registry` with styles.
+    - [x] **Persona**: Created `src/modules/bard/narrator_persona.md` (The Scriptwriter).
+    - [x] **Logic**: Implemented `scriptwriter.py` (LLM Script Generation).
+    - [x] **Audio**: Implemented `src/core/tts.py` (Modular TTS Interface and Gemini Adapter).
+    - [x] **Commands**: Implemented `/summary`, `/voice-list`, and `/voice-set` slash commands.
 - [x] **Table State Machine (Implicit)**: Implement implicit triggers for table state changes.
-    - [x] Update `SPECS.md` with `TABLE_STATE` protocol.
-    - [x] Update `gm_persona.md` with instructions for `TABLE_STATE` block.
-    - [x] Update `parser.py` to extract `TABLE_STATE`.
-    - [x] Update `main.py` to handle detected state changes with a `StateChangeView`.
-    - [x] Verify with tests and docs.
 - [x] **Table State Machine**: Implement session phase and OOC vs IC state management to prevent meta-bleed.
+- [x] **Table State Machine**: Implement session phase and OOC vs IC state management to prevent meta-bleed.
+    - [x] **Implicit Protocol**: `TABLE_STATE` detection and `StateChangeView` UI.
+    - [x] **Explicit Commands**: `/session` command for manual control.
+    - [x] **Core Logic**: `TableManager` and JSON persistence.
 - [x] **Stars and Wishes**: Implement a player feedback system.
-    - [x] `/stars [message]`: Players highlight something they enjoyed. (Implemented in main.py)
-    - [x] `/wishes [message]`: Players suggest something they'd like to see in the future. (Implemented in main.py)
-    - [x] Implicit Feedback: The AI will be instructed to analyze player messages for sentiment and content that can be interpreted as a "star" or a "wish". If the AI deems the feedback to be valid, it will be added to the feedback database via the feedback protocol.
-        - [x] Update `gm_persona.md` with instructions for `FEEDBACK_DETECTED` protocol.
-        - [x] Update `parser.py` to extract `FEEDBACK_DETECTED` blocks.
-        - [x] Update `main.py` to handle detected feedback and trigger `FeedbackConfirmView`.
-    - [x] Create `src/modules/feedback/DESIGN.md`.
-    - [x] Update `SPECS.md`.
-- [x] **Modular Provider (Alpha)**: Initial support for configurable model backends (Ollama/Custom).
-- [x] **Output Polish**: Implemented smart truncation, retry logic for long messages, and strict narrative limits in persona.
-- [x] **Couple Personas to Modules**: Distributed persona markdown files into modules, refactored code for relative path loading, and removed global configuration.
+- [x] **Modular Provider (Alpha)**: Initial support for configurable model backends.
+- [x] **Output Polish**: Implemented smart truncation and retry logic.
+- [x] **Couple Personas to Modules**: Distributed persona markdown files.
+

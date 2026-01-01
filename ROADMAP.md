@@ -63,16 +63,21 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
     - `/stars [message]`: Players highlight something they enjoyed.
     - `/wishes [message]`: Players suggest something they'd like to see in the future.
     - Implicit Feedback: The AI will be instructed to analyze player messages for sentiment and content that can be interpreted as a "star" or a "wish". If the AI deems the feedback to be valid, it will be added to the feedback database via the feedback protocol.
-- [ ] **Table State Machine**: Implement session phase and OOC vs IC state management to prevent meta-bleed.
-    - **Session Zero**: Initial state for world-building and character creation.
-    - **States**: `IDLE`, `SESSION_ZERO`, `ACTIVE`, `PAUSED`, `DEBRIEF`.
-    - **Commands**: `/session [start|zero|pause|resume|end|close]` to manage flow.
+- [x] **Table State Machine**: Implement session phase and OOC vs IC state management to prevent meta-bleed.
+    - [x] **Session Zero**: Initial state for world-building and character creation.
+    - [x] **States**: `IDLE`, `SESSION_ZERO`, `ACTIVE`, `PAUSED`, `DEBRIEF`.
+    - [x] **Commands**: `/session [start|zero|pause|resume|end|close]` to manage flow.
+- [ ] **Cinematic Vocal Recaps**: Narrative-rich, audio-driven storytelling summarizing recent events.
+    - **Goal**: Avoid robotic TTS. Create a "TV-Show Recap" vibe ("Previously, on Spire...").
+    - **Tech**: Dedicated 'Scriptwriter' persona + Modular AI TTS (Gemini/External).
+    - **Voice Customization**: Instance-configurable voice list. Players select the Narrator's voice via slash commands.
+    - **Persistence**: Chosen voice and style settings are saved to the campaign state.
+    - **Commands**:
+        - `/summary [scope]`: Trigger audio generation.
+        - `/voice set [name]`: Change the narrator's voice.
+        - `/voice list`: View available narrator options.
 - [ ] **Dedicated Player Ledger**: Refactor the current players mapping in `party.ledger` into a dedicated `players.ledger` to centralize User ID, username, and character name associations, making it more robust and easier to manage.
     - `/party`: List all players in the campaign along with their characters and their current status (ephemeral).
-- [ ] **Vocal Summaries**: Audio/text session recaps since the last logout.
-    - `/summary`: Audio/text session recaps since the player's last message. (ephemeral)
-    - `/summary [my last message|session|all]`: Audio/text session recaps since the player's last message, since the beginning of the current session or the entire campaign, respectively. (ephemeral)
-    - when the session ends, publish a public summary of the session.
 - [ ] **Atmosphere 2.0**: Refined visual generation styles and ambient task suggestions.
 
 ### 🔴 Phase 3: Mastery

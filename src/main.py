@@ -13,7 +13,7 @@ from google.genai import types
 # Add the project root to sys.path so we can import src modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.core.config import validate_config, DISCORD_TOKEN, AI_MODEL, MODEL_GM, TARGET_CHANNEL_ID
+from src.core.config import validate_config, DISCORD_TOKEN, AI_MODEL, MODEL_GM, TARGET_CHANNEL_ID, GEMINI_API_KEY
 from src.core.client import client_discord, tree, client_genai, llm_provider
 
 # Import Modules
@@ -44,12 +44,20 @@ from src.modules.table.state import TableManager, TableState
 from src.modules.table.commands import register_table_commands
 from src.modules.table.views import StateChangeView
 
+from src.modules.bard.manager import BardManager
+from src.modules.bard.commands import register_bard_commands
+from src.core.tts import GeminiTTSProvider
+
 from src.core.views import ConfirmView, FeedbackConfirmView
 
 # Initialize Managers
 away_manager = AwayManager() 
 table_manager = TableManager()
 register_table_commands(tree, table_manager)
+
+bard_manager = BardManager()
+tts_provider = GeminiTTSProvider(api_key=GEMINI_API_KEY)
+register_bard_commands(tree, bard_manager, tts_provider)
 
 # ------------------------------------------------------------------
 # EVENT HANDLERS
