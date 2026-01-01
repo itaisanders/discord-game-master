@@ -13,7 +13,7 @@ from google.genai import types
 # Add the project root to sys.path so we can import src modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.core.config import validate_config, DISCORD_TOKEN, AI_MODEL, MODEL_GM, TARGET_CHANNEL_ID, GEMINI_API_KEY
+from src.core.config import validate_config, DISCORD_TOKEN, AI_MODEL, MODEL_GM, TARGET_CHANNEL_ID, GEMINI_API_KEY, GEMINI_AUDIO_MODEL
 from src.core.client import client_discord, tree, client_genai, llm_provider
 
 # Import Modules
@@ -56,7 +56,7 @@ table_manager = TableManager()
 register_table_commands(tree, table_manager)
 
 bard_manager = BardManager()
-tts_provider = GeminiTTSProvider(api_key=GEMINI_API_KEY)
+tts_provider = GeminiTTSProvider(api_key=GEMINI_API_KEY, model_name=GEMINI_AUDIO_MODEL)
 register_bard_commands(tree, bard_manager, tts_provider)
 
 # ------------------------------------------------------------------
