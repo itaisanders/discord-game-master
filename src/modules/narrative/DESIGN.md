@@ -8,7 +8,16 @@ The `narrative` module handles the "Protocol Parsing" layer. It interprets raw t
 ## Public Interface
 
 ### `gm_persona.md`
-The "Soul" of the GM. This markdown file contains the System Instructions that define the AI's personality, rules, and formatting protocols.
+*   **Role/Description**: The "Soul" of the Game Master. Defines the AI's personality, rule arbitration logic, and formatting protocols.
+*   **Main Function**: `loader.py` -> `load_system_instruction()` (Injected into main Chat Session).
+*   **Supported Protocols**:
+    *   `VISUAL_PROMPT`
+    *   `MEMORY_UPDATE`
+    *   `DICE_ROLL`
+    *   `ROLL_CALL`
+    *   `DATA_TABLE`
+    *   `FEEDBACK_DETECTED`
+*   **Flows**: The primary system instruction for the active Game Master chat session.
 
 ### `loader.py`
 Handles loading the system instruction.

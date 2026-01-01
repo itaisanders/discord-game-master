@@ -3,6 +3,15 @@
 ## Overview
 The `memory` module handles reading and updating the campaign's persistent state files (`.ledger`) and the Multi-Persona system. It bridges the gap between raw text files and the AI's context.
 
+## Personas
+
+### `architect_persona.md`
+*   **Role/Description**: The "Memory Architect" responsible for maintaining the integrity of campaign state. It summarizes events, updates ledgers, and prunes obsolete data.
+*   **Main Function**: `service.py` -> `update_ledgers_logic()` and `rebuild_memory_from_history()`
+*   **Supported Protocols**: 
+    *   `FILE:` / ```FILE: ...``` (File writing protocol)
+*   **Flows**: Triggered asynchronously after significant narrative events or when a "Summary" is requested.
+
 ## Public Interface
 
 ### `service.py`

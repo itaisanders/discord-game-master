@@ -22,6 +22,15 @@ You are working on the **Discord RPG Game Master Bot**.
 4.  **Act**: Execute the code/terminal commands only after documentation is approved.
 5.  **Verify**: Run tests. Compare final output against usage in `SPECS.md`.
 
+## 2.1 DESIGN.md Documentation Standard
+Every `DESIGN.md` must explicitly document any **Persona** or **System Instruction** files (`*_persona.md`, `*.md` used as prompts) within the module.
+
+**Required Fields for Personas:**
+*   **Role/Description**: What is this persona responsible for?
+*   **Main Function**: Which python function invokes this persona?
+*   **Supported Protocols**: What special blocks (e.g., `MEMORY_UPDATE`) does it output?
+*   **Flows**: When is this persona triggered?
+
 ## 3. Development Workflow
 
 ### Prerequisite Checks

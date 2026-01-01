@@ -15,6 +15,20 @@ The `ingestion` module handles the pipeline for converting raw high-fidelity rul
     2.  Extracts text with layout awareness (headers, tables).
     3.  Writes to `knowledge/`.
 
+## Personas
+
+### `art_analyzer_persona.md`
+*   **Role/Description**: An "Art Director" persona that analyzes visual elements in RPG rulebooks to create atmospheric style guides.
+*   **Main Function**: `analyze_art_style.py` -> `run_analysis()`
+*   **Supported Protocols**: None (Outputs raw text/markdown).
+*   **Flows**: Triggered manually via `analyze_art_style.py` to process a PDF and generate a `.style` file.
+
+### `scribe_instructions.md`
+*   **Role/Description**: A "High-Fidelity Data Extraction Unit" persona designed for verbatim transcription of RPG PDFs into Markdown.
+*   **Main Function**: N/A (Currently serves as a reference/template for LLM-based extraction logic).
+*   **Supported Protocols**: Markdown formatting standards.
+*   **Flows**: Reference only.
+
 ### 2. Art Style Analyzer (`analyze_art_style.py`)
 *   **Purpose**: Scans PDFs to generate textual styleguides used for creating atmospheric visuals.
 *   **Input**: `pdf/*.pdf` or `active upload`
