@@ -40,6 +40,12 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - **Phase 1**: Explicit feedback commands.
 - **Phase 2**: Implicit feedback analysis.
 
+### 6. Multiverse Scaling ("The Infinite Table")
+*Focus: Supporting multiple simultaneous campaigns and complex campaign lifecycles.*
+- **Phase 1**: Channel-Specific Isolation (Separating ledgers, configurations, and source material by Discord Channel/Thread ID).
+- **Phase 2**: Campaign Lifecycle Management (Commands to start, close, reset, or branch games into sequels).
+- **Phase 3**: Distributed Architecture (Support for multi-server clusters and shared world-state across disparate campaigns).
+
 ---
 
 ## 📅 High-Level Milestones
@@ -56,7 +62,7 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
 - [x] **Output Polish**: Force bot output to be formatted to fit character limit, handle character limit and formatting faults gracefully instead of breaking the output into multiple messages.
 - [x] **Modular Provider (Alpha)**: Initial support for configurable model backends (Ollama/Custom).
 
-### 🟡 Phase 2: expansion
+### 🟡 Phase 2: Expansion
 - [x] **Context-Full Knowledge**: Replace RAG with direct Markdown context ingestion for rulebooks.
 - [x] **Away Mode**: Allow players to mark themselves as absent for a session with configurable character handling (ignore character, play as NPC, or narrative excuse).
 - [x] **Stars and Wishes**: Implement a player feedback system.
@@ -75,17 +81,26 @@ To create an AI Game Master that feels less like a chat bot and more like a crea
         - `/summary [scope]`: Trigger audio generation.
         - `/voice set [name]`: Change the narrator's voice.
         - `/voice list`: View available narrator options.
+- [ ] **Multiverse Foundation**: Reorganize data structures and flows to support channel-isolated state.
+    - **Isolated Ledgers**: Each channel gets its own `/memory` and `/table` state directory.
+    - **Channel-Scoped Knowledge**: Ability to upload/attach specific source material (PDFs/Markdown) to a single channel's context.
 - [ ] **Dedicated Player Ledger**: Refactor the current players mapping in `party.ledger` into a dedicated `players.ledger` to centralize User ID, username, and character name associations, making it more robust and easier to manage.
     - `/party`: List all players in the campaign along with their characters and their current status (ephemeral).
 - [ ] **Atmosphere 2.0**: Refined visual generation styles and ambient task suggestions.
 
 ### 🔴 Phase 3: Mastery
+- [ ] **Campaign Lifecycle Commands**:
+    - `/game start`: Initialize a new game on a new channel.
+    - `/game close`: Archive and shut down an existing game.
+    - `/game reset`: Wipe state to restart from scratch.
+    - `/game sequel`: Build a new game on top of the results of a previous one (inheriting world state/ledgers).
 - [ ] **Temporal Intelligence**: Enhance `TableManager` and `Ledger` modules to track and persist Season and Session numbers.
 - [ ] **Automated Chronicles**: Trigger automatic cinematic audio narration for:
     - **Season Intro**: Welcoming players to a new arc.
     - **Session Recap**: Narrative catch-up at the start of a session.
     - **Season Epilogue**: Grand finale summary after a climactic arc.
 - [ ] **Refined Scope Handling**: Deep integration of session/campaign scopes into the Bard's scriptwriting logic.
+- [ ] **Distributed Presence (Scale Out)**: Support for running the bot instance across multiple servers with a centralized discovery/orchestration layer.
 - [ ] Multi-Modal World-Building (AI generates maps based on session history)
 - [ ] Faction System (The world moves around the players)
 - [ ] Campaign Archiving (Exporting the campaign as a high-fidelity narrative "booklet")
