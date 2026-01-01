@@ -47,18 +47,24 @@ class BardCommands:
                 script = await self.scriptwriter.generate_script(history_text, ledger_context)
                 
                 # 3. Perform Audio
-                await interaction.edit_original_response(content="🎙️ **The Narrator is performing...**")
-                voice_def = self.bard_manager.get_selected_voice()
-                audio_data = await self.tts_provider.generate_audio(script, voice_def['provider_id'])
-                
-                # 4. Send File
-                audio_data.seek(0)
-                discord_file = discord.File(fp=audio_data, filename="recap.mp3")
-                
-                await interaction.edit_original_response(
-                    content=f"📖 **Cinematic Recap** (Narrated by: {voice_def['name']})\n||{script[:1800]}...||", 
-                    attachments=[discord_file]
-                )
+                try:
+                    await interaction.edit_original_response(content="🎙️ **The Narrator is performing...**")
+                    voice_def = self.bard_manager.get_selected_voice()
+                    audio_data = await self.tts_provider.generate_audio(script, voice_def['provider_id'])
+                    
+                    # 4. Send File
+                    audio_data.seek(0)
+                    discord_file = discord.File(fp=audio_data, filename="recap.mp3")
+                    
+                    await interaction.edit_original_response(
+                        content=f"📖 **Cinematic Recap** (Narrated by: {voice_def['name']})\n||{script[:1800]}...||", 
+                        attachments=[discord_file]
+                    )
+                except Exception as tts_error:
+                    print(f"⚠️ TTS Failed: {tts_error}")
+                    await interaction.edit_original_response(
+                        content=f"📜 **The Bard's voice is hoarse, but the scroll remains.**\n\n**Cinematic Script:**\n>>> {script}"
+                    )
                 
                 self.bard_manager.update_summary_timestamp()
                 
